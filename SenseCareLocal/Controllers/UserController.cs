@@ -19,7 +19,7 @@ namespace SenseCareLocal.Controllers
         {
             var users = await _userService.GetAll();
             return Ok(users);
-        } 
+        }
 
         [HttpGet]
         [Route("{id}")]
