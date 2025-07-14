@@ -11,6 +11,7 @@ builder.Services.AddSingleton<UserService>();
 builder.Services.AddSingleton<PatientService>();
 builder.Services.AddSingleton<DeviceService>();
 builder.Services.AddSingleton<VitalSignsService>();
+builder.Services.AddSingleton<InformeService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
