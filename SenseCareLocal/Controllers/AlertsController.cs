@@ -20,4 +20,13 @@ public class AlertsController : ControllerBase
         var alerts = await _alertService.GetAll();
         return Ok(alerts);
     }
+
+    [HttpGet("getTotalsToday")]
+
+    public async Task<ActionResult> GetTotalsToday()
+    {
+        var alerts = await _alertService.GetTotalsToday();
+
+        return Ok(alerts);
+    }
 }
