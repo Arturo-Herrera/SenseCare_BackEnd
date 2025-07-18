@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/SenseCareLocal.sln
+/SenseCareLocal/appsettings.json
+/SenseCareLocal/Properties/launchSettings.json
