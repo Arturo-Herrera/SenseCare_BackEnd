@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using SenseCareAPI.Helpers;
 using SenseCareLocal.Config;
@@ -60,5 +62,42 @@ public class PatientService
     public async Task<Patient?> ObtenerPacientePorCuidadorAsync(int cuidadorId)
     {
         return await _patients.Find(p => p.IDCuidador == cuidadorId).FirstOrDefaultAsync();
+    }
+
+    public async Task<ActivePatients> GetActivePatients()
+    {
+        var activePatients = $@"
+                [
+                  {{
+                    $lookup: {{
+                      from: ""Usuario"",
+                      localField: ""IDUsuario"",
+                      foreignField: ""_id"",
+                      as: ""usuario""
+                    }}
+                  }},
+                  {{
+                    $unwind: ""$usuario""
+                  }},
+                  {{
+                    $match: {{
+                      ""usuario.activo"": true,
+                      ""usuario.IDTipoUsuario._id"": ""PAC""
+                    }}
+                  }},
+                  {{
+                    $count: ""pacientesActivos""
+                  }}
+                ]
+            ";
+
+        var bsonArray = BsonSerializer.Deserialize<BsonArray>(activePatients);
+        var bsonDocuments = bsonArray.Select(stage => stage.AsBsonDocument).ToList();
+
+        var pipeline = PipelineDefinition<Patient, ActivePatients>.Create(bsonDocuments);
+
+        var result = await _patients.Aggregate(pipeline).FirstOrDefaultAsync();
+
+        return result;
     }
 }

@@ -20,62 +20,40 @@ namespace SenseCareLocal.Services
         public async Task<List<Alert>> GetAll() =>
             await _alerts.Find(_ => true).ToListAsync();
 
-        public async Task<List<AlertsPerDay>> GetTotalsToday()
+        public async Task<AlertsPerDay> GetTotalsToday()
         {
-            var currentDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
-
             var alerts = $@"
-    [
-      {{
-        '$match': {{
-          '$expr': {{
-            '$eq': [
-              {{ '$dateToString': {{ 'format': '%Y-%m-%d', 'date': '$fecha' }} }},
-              '{currentDate}'
-            ]
-          }}
-        }}
-      }},
-      {{
-        '$group': {{
-          '_id': null,
-          'datos': {{
-            '$push': {{
-              'fecha': {{
-                '$dateToString': {{ 'format': '%Y-%m-%d', 'date': '$fecha' }}
-              }}
-            }}
-          }}
-        }}
-      }},
-      {{ '$unwind': '$datos' }},
-      {{
-        '$group': {{
-          '_id': '$datos.fecha',
-          'totalAlertas': {{ '$sum': 1 }}
-        }}
-      }},
-      {{
-        '$project': {{
-          '_id': 0,
-          'fecha': '$_id',
-          'totalAlertas': 1
-        }}
-      }},
-      {{ '$sort': {{ 'fecha': 1 }} }}
-    ]";
+                [
+                    {{
+                      '$group': {{
+                        '_id': {{ '$dateToString': {{ 'format': '%Y-%m-%d', 'date': '$fecha' }} }},
+                        'totalAlertas': {{ '$sum': 1 }}
+                      }}
+                    }},
+                    {{
+                      '$group': {{
+                        '_id': null,
+                        'promedio': {{ '$avg': '$totalAlertas' }}
+                      }}
+                    }},
+                    {{
+                      '$project': {{
+                        '_id': 0,
+                        'promedioAlertasPorDia': {{ '$round': [ '$promedio', 0 ] }}
+                      }}
+                    }}
+                ]";
 
             var bsonArray = BsonSerializer.Deserialize<BsonArray>(alerts);
             var bsonDocuments = bsonArray.Select(stage => stage.AsBsonDocument).ToList();
 
             var pipeline = PipelineDefinition<Alert, AlertsPerDay>.Create(bsonDocuments);
 
-            var result = await _alerts.Aggregate(pipeline).ToListAsync();
+            var result = await _alerts.Aggregate(pipeline).FirstOrDefaultAsync();
 
             return result;
 
-
         }
-
     }
+
 }

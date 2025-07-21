@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SenseCareLocal.Services;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -6,11 +7,13 @@ public class PatientController : ControllerBase
 {
     private readonly PatientService _patientService;
     private readonly VitalSignsService _vitalSignService;
+    private readonly AlertService _alertsService;
 
-    public PatientController(PatientService patientService, VitalSignsService vitalSignService)
+    public PatientController(PatientService patientService, VitalSignsService vitalSignService, AlertService alertService)
     {
         _patientService = patientService;
         _vitalSignService = vitalSignService;
+        _alertsService = alertService;
     }
 
     [HttpPost("register")]
@@ -49,5 +52,85 @@ public class PatientController : ControllerBase
             MessageType = MessageType.Success,
             Data = signs
         });
+    }
+
+
+    [HttpGet("dailyAverage")]
+
+    public async Task<ActionResult> GetDailyAverage()
+    {
+        var averages = await _vitalSignService.GetAverageVitalsPerDay();
+        if (averages == null || !averages.Any())
+            return NotFound(new JSONResponse { Status = 1, Message = "No data found", MessageType = MessageType.Warning });
+        return Ok(new JSONResponse
+        {
+            Status = 0,
+            Message = "Daily averages retrieved successfully",
+            MessageType = MessageType.Success,
+            Data = averages
+        });
+    }
+
+    [HttpGet("activePatients")]
+    public async Task<ActionResult> GetActivePatients()
+    {
+        try
+        {
+            var activePatients = await _patientService.GetActivePatients();
+            return Ok(new JSONResponse
+            {
+                Status = 0,
+                Message = "Active patients retrieved successfully",
+                MessageType = MessageType.Success,
+                Data = activePatients
+            });
+        }
+        catch
+        {
+            return NotFound(new JSONResponse
+            {
+                Status = 1,
+                Message = "No data found",
+                MessageType = MessageType.Warning
+            });
+
+        }
+    }
+
+
+    [HttpGet("dashboard/data")]
+    public async Task<ActionResult> GetDashboardData()
+    {
+        try
+        {
+            var vitalSigns = await _vitalSignService.GetAverageVitalsPerDay();
+            var activePatients = await _patientService.GetActivePatients();
+            var alerts = await _alertsService.GetTotalsToday();
+            var oxygen = await _vitalSignService.GetOxygenLevelAvg();
+
+            var result = new
+            {
+                averageVitals = vitalSigns,
+                alertsPerDay = alerts,
+                activePatients = activePatients,
+                oxygenLevel = oxygen
+            };
+
+            return Ok(new JSONResponse
+            {
+                Status = 0,
+                Message = "Dashboard data retrieved successfully",
+                MessageType = MessageType.Success,
+                Data = result
+            });
+        } catch
+        {
+            return NotFound(new JSONResponse
+            {
+                Status = 1,
+                Message = "No data found",
+                MessageType = MessageType.Warning
+            });
+        }
     }
 }
