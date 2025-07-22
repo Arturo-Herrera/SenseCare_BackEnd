@@ -17,8 +17,49 @@ namespace SenseCareLocal.Services
             _alerts = database.GetCollection<Alert>("Alertas");
         }
 
-        public async Task<List<Alert>> GetAll() =>
-            await _alerts.Find(_ => true).ToListAsync();
+        public async Task<List<Alert>> GetAll(int idPatient)
+        {
+            var All = $@"
+            [
+              {{ 
+                $match:{{
+                  IDPaciente : {idPatient}
+                }}
+              }},
+              {{
+                $project:{{
+                  _id: 1,
+                  fecha: 1,
+                  signoAfectado: 1,
+                  IDPaciente: 1,
+                  IDTipoAlerta: 1
+                }}
+              }}
+            ]";
+
+            var bsonArray = BsonSerializer.Deserialize<BsonArray>(All); // VAR
+            var bsonDocuments = bsonArray.Select(stage => stage.AsBsonDocument).ToList();
+
+            var pipeline = PipelineDefinition<Alert, Alert>.Create(bsonDocuments);// TASK
+
+            var result = await _alerts.Aggregate(pipeline).ToListAsync();
+
+            return result;
+        }
+
+        public async Task Create(Alert alert)
+        {
+            var last = await _alerts.Find(_ => true)
+                                       .SortByDescending(u => u.Id)
+                                       .Limit(1).FirstOrDefaultAsync();
+            alert.Id = last != null ? last.Id + 1 : 1;
+
+            //falta fecha, signoafectado, idpaciente, idtipoalerta
+            alert.Fecha = DateTime.Now;
+            alert.SignoAfectado = alert.SignoAfectado ?? "N/A"; // Default value if null
+            alert.IDPaciente = alert.IDPaciente > 0 ? alert.IDPaciente : 1; // Default value if not set
+            alert.IDTipoAlerta = alert.IDTipoAlerta ?? "N/A"; // Default value if null
+        }//CAMBIAR SI SON NULL Y DATOS DE RETORNO
 
         public async Task<AlertsPerDay> GetTotalsToday()
         {
@@ -53,6 +94,74 @@ namespace SenseCareLocal.Services
 
             return result;
 
+        }
+
+        public async Task<List<LastAlerts>> GetLastAlerts(int idPatient)
+        {
+            var lastAlerts = $@"
+                [
+                  {{ ""$match"": {{ ""IDPaciente"": 1 }} }},
+                  {{ ""$sort"": {{ ""fecha"": -1 }} }},
+                  {{ ""$limit"": 6 }},
+                  {{
+                    ""$lookup"": {{
+                      ""from"": ""TipoAlerta"",
+                      ""localField"": ""IDTipoAlerta"",
+                      ""foreignField"": ""_id"",
+                      ""as"": ""tipoAlerta""
+                    }}
+                  }},
+                  {{ ""$unwind"": ""$tipoAlerta"" }},
+                  {{
+                    ""$lookup"": {{
+                      ""from"": ""Paciente"",
+                      ""localField"": ""IDPaciente"",
+                      ""foreignField"": ""_id"",
+                      ""as"": ""datosPaciente""
+                    }}
+                  }},
+                  {{ ""$unwind"": ""$datosPaciente"" }},
+                  {{
+                    ""$lookup"": {{
+                      ""from"": ""Usuario"",
+                      ""localField"": ""datosPaciente.IDUsuario"",
+                      ""foreignField"": ""_id"",
+                      ""as"": ""datosUsuario""
+                    }}
+                  }},
+                  {{ ""$unwind"": ""$datosUsuario"" }},
+                  {{
+                    ""$project"": {{
+                      ""_id"": 1,
+                      ""fecha"": {{
+                        ""$dateToString"": {{
+                          ""format"": ""%Y-%m-%d %H:%M:%S"",
+                          ""date"": ""$fecha""
+                        }}
+                      }},
+                      ""signoAfectado"": 1,
+                      ""tipoAlerta"": {{
+                        ""tipo"": ""$tipoAlerta.tipo"",
+                        ""descripcion"": ""$tipoAlerta.descripcion"",
+                        ""prioridad"": ""$tipoAlerta.prioridad""
+                      }},
+                      ""paciente"": {{
+                        ""_id"": ""$datosPaciente._id"",
+                        ""nombre"": ""$datosUsuario.nombre""
+                      }}
+                    }}
+                  }}
+                ]
+                ";
+
+            var bsonArray = BsonSerializer.Deserialize<BsonArray>(lastAlerts); // VAR
+            var bsonDocuments = bsonArray.Select(stage => stage.AsBsonDocument).ToList();
+
+            var pipeline = PipelineDefinition<Alert, LastAlerts>.Create(bsonDocuments);// TASK
+
+            var result = await _alerts.Aggregate(pipeline).ToListAsync();
+
+            return result;
         }
     }
 

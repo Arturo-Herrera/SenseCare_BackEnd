@@ -5,6 +5,7 @@ using MongoDB.Driver;
 using SenseCareAPI.Helpers;
 using SenseCareLocal.Config;
 using SenseCareLocal.Services;
+using Microsoft.AspNetCore.Mvc;
 
 public class PatientService
 {
@@ -94,9 +95,108 @@ public class PatientService
         var bsonArray = BsonSerializer.Deserialize<BsonArray>(activePatients);
         var bsonDocuments = bsonArray.Select(stage => stage.AsBsonDocument).ToList();
 
-        var pipeline = PipelineDefinition<Patient, ActivePatients>.Create(bsonDocuments);
+        var pipeline = PipelineDefinition<Patient, ActivePatients>.Create(bsonDocuments);//
 
         var result = await _patients.Aggregate(pipeline).FirstOrDefaultAsync();
+
+        return result;
+    }
+
+    public async Task<List<InfoPatientResult>> GetInfoPatient(int idPatient)
+    {
+
+        var infoPatient = $@"[
+                {{
+                ""$match"": {{ ""_id"": {idPatient} }}
+                }},
+                {{
+                ""$lookup"": {{
+                    ""from"": ""Usuario"",
+                    ""localField"": ""IDUsuario"",
+                    ""foreignField"": ""_id"",
+                    ""as"": ""datosUsuario""
+                }}
+                }},
+                {{
+                ""$lookup"": {{
+                    ""from"": ""Usuario"",
+                    ""localField"": ""IDCuidador"",
+                    ""foreignField"": ""_id"",
+                    ""as"": ""datosCuidador""
+                }}
+                }},
+                {{
+                ""$lookup"": {{
+                    ""from"": ""Dispositivo"",
+                    ""localField"": ""IDDispositivo"",
+                    ""foreignField"": ""_id"",
+                    ""as"": ""datosDispositivo""
+                }}
+                }},
+                {{
+                ""$project"": {{
+                    ""_id"": 1,
+                    ""paciente"": {{
+                    ""$arrayElemAt"": [""$datosUsuario"", 0]
+                    }},
+                    ""cuidador"": {{
+                    ""_id"": {{ ""$arrayElemAt"": [""$datosCuidador._id"", 0] }},
+                    ""nombre"": {{ ""$arrayElemAt"": [""$datosCuidador.nombre"", 0] }},
+                    ""apellido"": {{ ""$arrayElemAt"": [""$datosCuidador.apellidoPa"", 0] }}
+                    }},
+                    ""dispositivo"": {{
+                    ""$arrayElemAt"": [""$datosDispositivo"", 0]
+                    }}
+                }}
+                }}
+            ]";
+
+
+        var bsonArray = BsonSerializer.Deserialize<BsonArray>(infoPatient); // VAR
+        var bsonDocuments = bsonArray.Select(stage => stage.AsBsonDocument).ToList();
+
+        var pipeline = PipelineDefinition<Patient, InfoPatientResult>.Create(bsonDocuments);// TASK
+
+        var result = await _patients.Aggregate(pipeline).ToListAsync();
+
+        return result;
+    }
+
+    public async Task<List<InfoPatientSelect>> GetPatientSelect()
+    {
+        var infoPatient = @"
+            [
+              {
+                ""$lookup"": {
+                  ""from"": ""Usuario"",
+                  ""localField"": ""IDUsuario"",
+                  ""foreignField"": ""_id"",
+                  ""as"": ""datosUsuario""
+                }
+              },
+              {
+                ""$unwind"": ""$datosUsuario""
+              },
+              {
+                ""$project"": {
+                  ""_id"": 1,
+                  ""nombreCompleto"": {
+                    ""$concat"": [
+                      ""$datosUsuario.nombre"",
+                      "" "",
+                      ""$datosUsuario.apellidoPa""
+                    ]
+                  }
+                }
+              }
+            ]";
+
+        var bsonArray = BsonSerializer.Deserialize<BsonArray>(infoPatient); // VAR
+        var bsonDocuments = bsonArray.Select(stage => stage.AsBsonDocument).ToList();
+
+        var pipeline = PipelineDefinition<Patient, InfoPatientSelect>.Create(bsonDocuments);// TASK
+
+        var result = await _patients.Aggregate(pipeline).ToListAsync();
 
         return result;
     }

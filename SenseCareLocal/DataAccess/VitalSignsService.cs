@@ -65,10 +65,10 @@ public class VitalSignsService
             ]
             ";
 
-        var bsonArray = BsonSerializer.Deserialize<BsonArray>(averageDaily);
+        var bsonArray = BsonSerializer.Deserialize<BsonArray>(averageDaily); // VAR
         var bsonDocuments = bsonArray.Select(stage => stage.AsBsonDocument).ToList();
 
-        var pipeline = PipelineDefinition<VitalSign, AverageVitalsPerDay>.Create(bsonDocuments);
+        var pipeline = PipelineDefinition<VitalSign, AverageVitalsPerDay>.Create(bsonDocuments);// TASK
 
         var result = await _signs.Aggregate(pipeline).ToListAsync();
 
@@ -99,6 +99,105 @@ public class VitalSignsService
         var pipeline = PipelineDefinition<VitalSign, AverageOxygenLevel>.Create(bsonDocuments);
 
         var result = await _signs.Aggregate(pipeline).FirstOrDefaultAsync();
+
+        return result;
+    }
+
+    public async Task<List<AverageVitalSign>> GetAveragePatient(int idPaciente)
+    {
+        // Calcular fecha de inicio (últimos 7 días)
+        var fechaInicio = DateTime.UtcNow.AddDays(-7).Date;
+
+        var avgByPatient = $@"
+    [
+        {{
+            ""$match"": {{ 
+                ""IDPaciente"": {idPaciente},
+                ""fecha"": {{ ""$gte"": new Date(""{fechaInicio:yyyy-MM-dd}"") }}
+            }}
+        }},
+        {{
+            ""$addFields"": {{
+                ""promedioPulsoDoc"": {{ ""$avg"": ""$pulso"" }}
+            }}
+        }},
+        {{
+            ""$group"": {{
+                ""_id"": {{
+                    ""IDPaciente"": ""$IDPaciente"",
+                    ""dia"": {{ ""$dateToString"": {{ ""format"": ""%Y-%m-%d"", ""date"": ""$fecha"" }} }}
+                }},
+                ""promedioPulso"": {{ ""$avg"": ""$promedioPulsoDoc"" }},
+                ""promedioTemperatura"": {{ ""$avg"": ""$temperatura"" }},
+                ""promedioOxigeno"": {{ ""$avg"": ""$oxigeno"" }}
+            }}
+        }},
+        {{
+            ""$project"": {{
+                ""_id"": 0,
+                ""IDPaciente"": ""$_id.IDPaciente"",
+                ""dia"": ""$_id.dia"",
+                ""promedioPulso"": {{ ""$round"": [""$promedioPulso"", 2] }},
+                ""promedioTemperatura"": {{ ""$round"": [""$promedioTemperatura"", 2] }},
+                ""promedioOxigeno"": {{ ""$round"": [""$promedioOxigeno"", 2] }}
+            }}
+        }}
+    ]";
+
+        var bsonArray = BsonSerializer.Deserialize<BsonArray>(avgByPatient);
+        var bsonDocuments = bsonArray.Select(stage => stage.AsBsonDocument).ToList();
+        var pipeline = PipelineDefinition<VitalSign, AverageVitalSign>.Create(bsonDocuments);
+
+        return await _signs.Aggregate(pipeline).ToListAsync();
+    }
+
+    public async Task<List<LastLectures>> GetLastLectures(int idPatient)
+    {
+        var vitalSignsQuery = $@"[
+        {{
+            ""$match"": {{ ""IDPaciente"": {idPatient} }}
+        }},
+        {{
+            ""$addFields"": {{
+                ""pulsoPromedio"": {{ ""$avg"": ""$pulso"" }}
+            }}
+        }},
+        {{
+            ""$sort"": {{ ""fecha"": -1 }}
+        }},
+        {{
+            ""$limit"": 3
+        }},
+        {{
+            ""$project"": {{
+                ""_id"": 1,
+                ""fecha"": {{
+                    ""$dateToString"": {{
+                        ""format"": ""%Y-%m-%d %H:%M:%S"",
+                        ""date"": ""$fecha""
+                    }}
+                }},
+                ""fuente"": {{
+                    ""$cond"": {{
+                        ""if"": {{ ""$eq"": [""$fuente"", true] }},
+                        ""then"": ""Manual"",
+                        ""else"": ""Automática""
+                    }}
+                }},
+                ""pulso"": 1,
+                ""pulsoPromedio"": {{ ""$round"": [""$pulsoPromedio"", 2] }},
+                ""temperatura"": 1,
+                ""oxigeno"": 1
+            }}
+        }}
+    ]";
+
+        var bsonArray = BsonSerializer.Deserialize<BsonArray>(vitalSignsQuery); // VAR
+        var bsonDocuments = bsonArray.Select(stage => stage.AsBsonDocument).ToList();
+
+        var pipeline = PipelineDefinition<VitalSign, LastLectures>.Create(bsonDocuments);// TASK
+
+        var result = await _signs.Aggregate(pipeline).ToListAsync();
 
         return result;
     }

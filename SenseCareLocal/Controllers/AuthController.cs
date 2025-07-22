@@ -1,9 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SenseCareLocal.DTOs;
 using SenseCareLocal.Services;
-using SenseCareLocal.DTOs;
 using SenseCareLocal.Services;
 using SenseCareAPI.Helpers;
+using SenseCareLocal.Dtos.Login;
 
 
 namespace SenseCareLocal.Controllers;

@@ -1,8 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
-using MongoDB.Bson;
 using MongoDB.Driver;
 using SenseCareAPI.Helpers;
-using SenseCareLocal.Config;
 using SenseCareLocal.Config;
 
 namespace SenseCareLocal.Services

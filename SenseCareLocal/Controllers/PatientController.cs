@@ -123,7 +123,8 @@ public class PatientController : ControllerBase
                 MessageType = MessageType.Success,
                 Data = result
             });
-        } catch
+        }
+        catch
         {
             return NotFound(new JSONResponse
             {
@@ -132,5 +133,70 @@ public class PatientController : ControllerBase
                 MessageType = MessageType.Warning
             });
         }
+    }
+
+    [HttpGet("patients/data/{idPatient}")]
+    public async Task<ActionResult> GetPatientData(int idPatient)
+    {
+        try
+        {
+            var vitalSigns = await _vitalSignService.GetAveragePatient(idPatient);//!
+            var infoPatient = await _patientService.GetInfoPatient(idPatient);
+            var lastAlerts = await _alertsService.GetLastAlerts(idPatient);
+            var lastLectures = await _vitalSignService.GetLastLectures(idPatient);
+
+
+            var result = new
+            {
+                patient = infoPatient,
+                averageVitals = vitalSigns,
+                alerts = lastAlerts,
+                lectures = lastLectures
+            };
+
+            return Ok(new JSONResponse
+            {
+                Status = 0,
+                Message = "Patient data retrieved successfully",
+                MessageType = MessageType.Success,
+                Data = result
+            });
+        }
+        catch
+        {
+            return NotFound(new JSONResponse
+            {
+                Status = 1,
+                Message = "No data found",
+                MessageType = MessageType.Warning
+            });
+        }
+    }
+
+    [HttpGet("getSelect")]
+    public async Task<ActionResult> GetInfoPatientSelect()
+    {
+        try
+        {
+            var result = await _patientService.GetPatientSelect();// SELECT A PATIENT
+
+            return Ok(new JSONResponse
+            {
+                Status = 0,
+                Message = "Patient data retrieved successfully",
+                MessageType = MessageType.Success,
+                Data = result
+            });
+        }
+        catch
+        {
+            return NotFound(new JSONResponse
+            {
+                Status = 1,
+                Message = "No data found",
+                MessageType = MessageType.Warning
+            });
+        }
+
     }
 }

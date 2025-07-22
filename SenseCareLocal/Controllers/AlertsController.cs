@@ -14,13 +14,6 @@ public class AlertsController : ControllerBase
         _alertService = alertService;
     }
 
-    [HttpGet]
-    public async Task<ActionResult<List<Alert>>> GetAll()
-    {
-        var alerts = await _alertService.GetAll();
-        return Ok(alerts);
-    }
-
     [HttpGet("getTotalsToday")]
 
     public async Task<ActionResult> GetTotalsToday()
@@ -29,4 +22,5 @@ public class AlertsController : ControllerBase
 
         return Ok(alerts);
     }
+
 }
