@@ -48,5 +48,17 @@ public class ReportService
 
         return result;
     }
+
+	public async Task Create(Report report)
+	{
+		var last = await _report.Find(_ => true)
+					   .SortByDescending(u => u.Id)
+					   .Limit(1).FirstOrDefaultAsync();
+
+		report.Id = last != null ? last.Id + 1 : 1;
+		report.Date = report.Date.Date;
+
+		await _report.InsertOneAsync(report);
+	}
 }
 
