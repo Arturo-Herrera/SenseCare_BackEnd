@@ -7,12 +7,14 @@ using SenseCareLocal.Config;
 public class VitalSignsService
 {
     private readonly IMongoCollection<VitalSign> _signs;
+    private readonly IMongoCollection<Patient> _patient;
 
     public VitalSignsService(IOptions<MongoDBSettings> cfg)
     {
         var client = new MongoClient(cfg.Value.ConnectionString);
         var db = client.GetDatabase(cfg.Value.DatabaseName);
         _signs = db.GetCollection<VitalSign>("SignosVitales");
+        _patient = db.GetCollection<Patient>("Paciente");
     }
 
     public async Task<List<VitalSign>> GetByPatient(int idPaciente)
@@ -23,47 +25,154 @@ public class VitalSignsService
                             .ToListAsync();
     }
 
-    public async Task<List<AverageVitalsPerDay>> GetAverageVitalsPerDay()
+public async Task InsertPulse(int idDevice, int value)
+{
+    var patient = await _patient.Find(p => p.IDDispositivo == idDevice).FirstOrDefaultAsync();
+    if (patient == null)
+        throw new Exception("Patient not found");
+    var filtro = Builders<VitalSign>.Filter.Eq(s => s.IDPaciente, patient.Id);
+    var last = await _signs
+        .Find(filtro)
+        .SortByDescending(s => s.Fecha)
+        .FirstOrDefaultAsync();
+    if (last != null && (last.Temperatura == 0 || last.Oxigeno == 0))
     {
-        var averageDaily = @"
-            [
-              {
-                $group: {
-                  _id: null,
-                  datos: {
-                    $push: {
-                      fecha: {
-                        $dateToString: { format: ""%Y-%m-%d"", date: ""$fecha"" }
-                      },
-                      temperatura: ""$temperatura"",
-                      pulso: ""$pulso""
-                    }
-                  }
-                }
-              },
-              {
-                $unwind: ""$datos""
-              },
-              {
-                $group: {
-                  _id: ""$datos.fecha"",
-                  promedioTemperatura: { $avg: ""$datos.temperatura"" },
-                  promedioPulso: { $avg: { $avg: ""$datos.pulso"" } }
-                }
-              },
-              {
-                $project: {
-                  _id: 0,
-                  fecha: ""$_id"",
-                  promedioTemperatura: { $round: [""$promedioTemperatura"", 2] },
-                  promedioPulso: { $round: [""$promedioPulso"", 2] }
-                }
-              },
-              {
-                $sort: { fecha: 1 }
-              }
-            ]
-            ";
+        var update = Builders<VitalSign>.Update.Push(s => s.Pulso, value);
+        await _signs.UpdateOneAsync(s => s.Id == last.Id, update);
+    }
+    else
+    {
+        // Obtener el máximo ID personalizado y sumarle 1
+        var maxIdDoc = await _signs
+                .Find(Builders<VitalSign>.Filter.Empty)
+                .SortByDescending(s => s.Id)
+                .Limit(1)
+                .FirstOrDefaultAsync();
+
+        int nextId = (maxIdDoc?.Id ?? 0) + 1;
+
+        var newDoc = new VitalSign
+        {
+            Id = nextId,
+            IDPaciente = patient.Id,
+            Fecha = DateTime.Now,
+            Pulso = new List<int> { value },
+            Temperatura = 0,
+            Oxigeno = 0
+        };
+        await _signs.InsertOneAsync(newDoc);
+    }
+}
+
+
+    public async Task InsertTemperatureAndOxygen(int idDevice, double? temperature, double? oxygen)
+    {
+        var patient = await _patient.Find(p => p.IDDispositivo == idDevice).FirstOrDefaultAsync();
+        if (patient == null)
+            throw new Exception("Patient not found");
+
+        var filter = Builders<VitalSign>.Filter.Eq(s => s.IDPaciente, patient.Id);
+        var last = await _signs
+            .Find(filter)
+            .SortByDescending(s => s.Fecha)
+            .FirstOrDefaultAsync();
+
+        bool needsNew = true;
+
+        if (last != null)
+        {
+            var updateDef = Builders<VitalSign>.Update.Combine();
+
+            if (temperature.HasValue && (last.Temperatura == 0 || last.Temperatura == null))
+            {
+                updateDef = updateDef.Set(s => s.Temperatura, temperature.Value);
+                needsNew = false;
+            }
+
+            if (oxygen.HasValue && (last.Oxigeno == 0 || last.Oxigeno == null))
+            {
+                updateDef = updateDef.Set(s => s.Oxigeno, oxygen.Value);
+                needsNew = false;
+            }
+
+            if (!needsNew)
+            {
+                await _signs.UpdateOneAsync(s => s.Id == last.Id, updateDef);
+                return;
+            }
+        }
+
+        // Buscar el max Id para generar uno nuevo único
+        var maxIdDoc = await _signs.Find(FilterDefinition<VitalSign>.Empty)
+                                  .SortByDescending(s => s.Id)
+                                  .Limit(1)
+                                  .FirstOrDefaultAsync();
+
+        int nextId = (maxIdDoc != null) ? maxIdDoc.Id + 1 : 1;
+
+        var newDoc = new VitalSign
+        {
+            Id = nextId,
+            IDPaciente = patient.Id,
+            Fecha = DateTime.Now,
+            Pulso = new List<int>(),
+            Temperatura = temperature,
+            Oxigeno = oxygen
+        };
+
+        await _signs.InsertOneAsync(newDoc);
+    }
+
+
+
+    public async Task<List<AverageVitalsPerDay>> GetAverageVitalsPerDay()//comprobar
+    {
+        var fechaInicio = DateTime.UtcNow.AddDays(-7).Date;
+
+        var averageDaily = $@"
+        [
+          {{
+            ""$match"": {{
+              ""fecha"": {{ $gte: new Date(""{fechaInicio:yyyy-MM-dd}"") }}
+            }}
+          }},
+          {{
+            ""$group"": {{
+              ""_id"": null,
+              ""datos"": {{
+                ""$push"": {{
+                  ""fecha"": {{
+                    ""$dateToString"": {{ ""format"": ""%Y-%m-%d"", ""date"": ""$fecha"" }}
+                  }},
+                  ""temperatura"": ""$temperatura"",
+                  ""pulso"": ""$pulso""
+                }}
+              }}
+            }}
+          }},
+          {{
+            ""$unwind"": ""$datos""
+          }},
+          {{
+            ""$group"": {{
+              ""_id"": ""$datos.fecha"",
+              ""promedioTemperatura"": {{ ""$avg"": ""$datos.temperatura"" }},
+              ""promedioPulso"": {{ ""$avg"": {{ ""$avg"": ""$datos.pulso"" }} }}
+            }}
+          }},
+          {{
+            ""$project"": {{
+              ""_id"": 0,
+              ""fecha"": ""$_id"",
+              ""promedioTemperatura"": {{ ""$round"": [""$promedioTemperatura"", 2] }},
+              ""promedioPulso"": {{ ""$round"": [""$promedioPulso"", 2] }}
+            }}
+          }},
+          {{
+            ""$sort"": {{ ""fecha"": 1 }}
+          }}
+        ]
+        ";
 
         var bsonArray = BsonSerializer.Deserialize<BsonArray>(averageDaily); // VAR
         var bsonDocuments = bsonArray.Select(stage => stage.AsBsonDocument).ToList();
@@ -151,54 +260,58 @@ public class VitalSignsService
         return await _signs.Aggregate(pipeline).ToListAsync();
     }
 
-    public async Task<List<LastLectures>> GetLastLectures(int idPatient)
+    public async Task<List<LastLectures>> GetLastLectures(int idPatient) // MINUTOS DESDE QUE PASARON
     {
         var vitalSignsQuery = $@"[
-        {{
-            ""$match"": {{ ""IDPaciente"": {idPatient} }}
-        }},
-        {{
-            ""$addFields"": {{
-                ""pulsoPromedio"": {{ ""$avg"": ""$pulso"" }}
-            }}
-        }},
-        {{
-            ""$sort"": {{ ""fecha"": -1 }}
-        }},
-        {{
-            ""$limit"": 3
-        }},
-        {{
-            ""$project"": {{
-                ""_id"": 1,
-                ""fecha"": {{
-                    ""$dateToString"": {{
-                        ""format"": ""%Y-%m-%d %H:%M:%S"",
-                        ""date"": ""$fecha""
-                    }}
-                }},
-                ""fuente"": {{
-                    ""$cond"": {{
-                        ""if"": {{ ""$eq"": [""$fuente"", true] }},
-                        ""then"": ""Manual"",
-                        ""else"": ""Automática""
-                    }}
-                }},
-                ""pulso"": 1,
-                ""pulsoPromedio"": {{ ""$round"": [""$pulsoPromedio"", 2] }},
-                ""temperatura"": 1,
-                ""oxigeno"": 1
+    {{
+        ""$match"": {{ ""IDPaciente"": {idPatient} }}
+    }},
+    {{
+        ""$addFields"": {{
+            ""pulsoPromedio"": {{ ""$avg"": ""$pulso"" }},
+            ""tiempoTranscurrido"": {{
+                        ""$dateDiff"": {{
+                            ""startDate"": ""$fecha"",
+                            ""endDate"": ""$$NOW"",
+                            ""unit"": ""minute""
+                        }}
             }}
         }}
-    ]";
-
+    }},
+    {{
+        ""$sort"": {{ ""fecha"": -1 }}
+    }},
+    {{
+        ""$limit"": 3
+    }},
+    {{
+        ""$project"": {{
+            ""_id"": 1,
+            ""fecha"": {{
+                ""$dateToString"": {{
+                    ""format"": ""%Y-%m-%d %H:%M:%S"",
+                    ""date"": ""$fecha""
+                }}
+            }},
+            ""fuente"": {{
+                ""$cond"": {{
+                    ""if"": {{ ""$eq"": [""$fuente"", true] }},
+                    ""then"": ""Manual"",
+                    ""else"": ""Automática""
+                }}
+            }},
+            ""tiempoTranscurrido"": 1,
+            ""pulso"": 1,
+            ""pulsoPromedio"": {{ ""$round"": [""$pulsoPromedio"", 2] }},
+            ""temperatura"": 1,
+            ""oxigeno"": 1
+        }}
+    }}
+]";
         var bsonArray = BsonSerializer.Deserialize<BsonArray>(vitalSignsQuery); // VAR
         var bsonDocuments = bsonArray.Select(stage => stage.AsBsonDocument).ToList();
-
         var pipeline = PipelineDefinition<VitalSign, LastLectures>.Create(bsonDocuments);// TASK
-
         var result = await _signs.Aggregate(pipeline).ToListAsync();
-
         return result;
     }
 }

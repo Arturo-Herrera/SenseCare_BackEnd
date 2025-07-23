@@ -10,4 +10,10 @@ public class DevicePatient
 
     [BsonElement("activo")]
     public bool Activo { get; set; }
+
+    [BsonElement("latitud")]
+    public double Latitude { get; set; }
+
+    [BsonElement("longitud")]
+    public double Longitude { get; set; }
 }

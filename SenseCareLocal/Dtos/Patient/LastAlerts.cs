@@ -16,6 +16,9 @@ public class LastAlerts
 
     [BsonElement("paciente")]
     public PatientLastAlert Patient { get; set;}
+
+    [BsonElement("tiempoTranscurrido")]
+    public int TimeAgo { get; set; }
 }
 
 public class AlertType 

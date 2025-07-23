@@ -16,11 +16,11 @@ public class VitalSign
     public bool Fuente { get; set; }
 
     [BsonElement("pulso")]
-    public List<int> Pulso { get; set; } = new();
+    public List<int> Pulso { get; set; } = new ();
 
     [BsonElement("temperatura")]
-    public double Temperatura { get; set; }
+    public double? Temperatura { get; set; }
 
     [BsonElement("oxigeno")]
-    public double Oxigeno { get; set; }
+    public double? Oxigeno { get; set; }
 }

@@ -9,6 +9,6 @@ public class AverageVitalsPerDay
     public double PromedioTemperatura { get; set; }
 
     [BsonElement("promedioPulso")]
-    public double PromedioPulso { get; set; }
+    public double? PromedioPulso { get; set; }
 }
 

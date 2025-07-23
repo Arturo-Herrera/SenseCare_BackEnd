@@ -23,4 +23,7 @@ public class LastLectures
 
     [BsonElement("pulsoPromedio")]
     public double PulsoPromedio { get; set; }
+
+    [BsonElement("tiempoTranscurrido")]
+    public int TimeAgo { get; set; }
 }

@@ -138,8 +138,8 @@ public class PatientController : ControllerBase
     [HttpGet("patients/data/{idPatient}")]
     public async Task<ActionResult> GetPatientData(int idPatient)
     {
-        try
-        {
+        //try
+        //{
             var vitalSigns = await _vitalSignService.GetAveragePatient(idPatient);//!
             var infoPatient = await _patientService.GetInfoPatient(idPatient);
             var lastAlerts = await _alertsService.GetLastAlerts(idPatient);
@@ -154,23 +154,25 @@ public class PatientController : ControllerBase
                 lectures = lastLectures
             };
 
-            return Ok(new JSONResponse
-            {
-                Status = 0,
-                Message = "Patient data retrieved successfully",
-                MessageType = MessageType.Success,
-                Data = result
-            });
-        }
-        catch
-        {
-            return NotFound(new JSONResponse
-            {
-                Status = 1,
-                Message = "No data found",
-                MessageType = MessageType.Warning
-            });
-        }
+        return Ok(result);
+
+        //    return Ok(new JSONResponse
+        //    {
+        //        Status = 0,
+        //        Message = "Patient data retrieved successfully",
+        //        MessageType = MessageType.Success,
+        //        Data = result
+        //    });
+        //}
+        //catch
+        //{
+        //    return NotFound(new JSONResponse
+        //    {
+        //        Status = 1,
+        //        Message = "No data found",
+        //        MessageType = MessageType.Warning
+        //    });
+        //}
     }
 
     [HttpGet("getSelect")]

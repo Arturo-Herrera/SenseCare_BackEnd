@@ -96,73 +96,84 @@ namespace SenseCareLocal.Services
 
         }
 
-        public async Task<List<LastAlerts>> GetLastAlerts(int idPatient)
+        public async Task<List<LastAlerts>> GetLastAlerts(int idPatient) // MINUTOS DESDE QUE PASARON
         {
             var lastAlerts = $@"
                 [
-                  {{ ""$match"": {{ ""IDPaciente"": 1 }} }},
-                  {{ ""$sort"": {{ ""fecha"": -1 }} }},
-                  {{ ""$limit"": 6 }},
-                  {{
+                    {{ ""$match"": {{ ""IDPaciente"": {idPatient} }} }},
+                    {{ ""$sort"": {{ ""fecha"": -1 }} }},
+                    {{ ""$limit"": 6 }},
+                    {{
                     ""$lookup"": {{
-                      ""from"": ""TipoAlerta"",
-                      ""localField"": ""IDTipoAlerta"",
-                      ""foreignField"": ""_id"",
-                      ""as"": ""tipoAlerta""
+                        ""from"": ""TipoAlerta"",
+                        ""localField"": ""IDTipoAlerta"",
+                        ""foreignField"": ""_id"",
+                        ""as"": ""tipoAlerta""
                     }}
-                  }},
-                  {{ ""$unwind"": ""$tipoAlerta"" }},
-                  {{
+                    }},
+                    {{ ""$unwind"": ""$tipoAlerta"" }},
+                    {{
                     ""$lookup"": {{
-                      ""from"": ""Paciente"",
-                      ""localField"": ""IDPaciente"",
-                      ""foreignField"": ""_id"",
-                      ""as"": ""datosPaciente""
+                        ""from"": ""Paciente"",
+                        ""localField"": ""IDPaciente"",
+                        ""foreignField"": ""_id"",
+                        ""as"": ""datosPaciente""
                     }}
-                  }},
-                  {{ ""$unwind"": ""$datosPaciente"" }},
-                  {{
+                    }},
+                    {{ ""$unwind"": ""$datosPaciente"" }},
+                    {{
                     ""$lookup"": {{
-                      ""from"": ""Usuario"",
-                      ""localField"": ""datosPaciente.IDUsuario"",
-                      ""foreignField"": ""_id"",
-                      ""as"": ""datosUsuario""
+                        ""from"": ""Usuario"",
+                        ""localField"": ""datosPaciente.IDUsuario"",
+                        ""foreignField"": ""_id"",
+                        ""as"": ""datosUsuario""
                     }}
-                  }},
-                  {{ ""$unwind"": ""$datosUsuario"" }},
-                  {{
-                    ""$project"": {{
-                      ""_id"": 1,
-                      ""fecha"": {{
-                        ""$dateToString"": {{
-                          ""format"": ""%Y-%m-%d %H:%M:%S"",
-                          ""date"": ""$fecha""
+                    }},
+                    {{ ""$unwind"": ""$datosUsuario"" }},
+                    {{
+                    ""$addFields"": {{
+                        ""tiempoTranscurrido"": {{
+                        ""$dateDiff"": {{
+                            ""startDate"": ""$fecha"",
+                            ""endDate"": ""$$NOW"",
+                            ""unit"": ""minute""
                         }}
-                      }},
-                      ""signoAfectado"": 1,
-                      ""tipoAlerta"": {{
+                        }}
+                    }}
+                    }},
+                    {{
+                    ""$project"": {{
+                        ""_id"": 1,
+                        ""fecha"": {{
+                        ""$dateToString"": {{
+                            ""format"": ""%Y-%m-%d %H:%M:%S"",
+                            ""date"": ""$fecha""
+                        }}
+                        }},
+                        ""signoAfectado"": 1,
+                        ""tiempoTranscurrido"": 1,
+                        ""tipoAlerta"": {{
                         ""tipo"": ""$tipoAlerta.tipo"",
                         ""descripcion"": ""$tipoAlerta.descripcion"",
                         ""prioridad"": ""$tipoAlerta.prioridad""
-                      }},
-                      ""paciente"": {{
+                        }},
+                        ""paciente"": {{
                         ""_id"": ""$datosPaciente._id"",
                         ""nombre"": ""$datosUsuario.nombre""
-                      }}
+                        }}
                     }}
-                  }}
-                ]
-                ";
+                    }}
+                ]";
 
-            var bsonArray = BsonSerializer.Deserialize<BsonArray>(lastAlerts); // VAR
+            var bsonArray = BsonSerializer.Deserialize<BsonArray>(lastAlerts);
             var bsonDocuments = bsonArray.Select(stage => stage.AsBsonDocument).ToList();
 
-            var pipeline = PipelineDefinition<Alert, LastAlerts>.Create(bsonDocuments);// TASK
-
+            var pipeline = PipelineDefinition<Alert, LastAlerts>.Create(bsonDocuments);
             var result = await _alerts.Aggregate(pipeline).ToListAsync();
 
             return result;
         }
+
     }
 
 }
