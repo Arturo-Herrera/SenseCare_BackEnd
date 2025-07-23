@@ -1,5 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson;
+using MongoDB.Driver;
 using SenseCareLocal.Services;
+using System;
 
 namespace SenseCareLocal.Controllers
 {
@@ -55,6 +59,45 @@ namespace SenseCareLocal.Controllers
             {
                 var response = new JSONResponse { Status = 1, Message = "Failed Creating User", MessageType = MessageType.Error };
                 return StatusCode(500, response);
+            }
+        }
+
+
+        [HttpPost("filter")]
+        public async Task<IActionResult> UserFilter([FromBody] UserFilter filter)
+        {
+            var users = await _userService.UserFilter(filter);
+
+            return Ok(users);
+        }
+
+        [HttpPut("updateState/{idUser}")]
+        public async Task<ActionResult> UpdateUserState(int idUser, [FromQuery] bool activate)
+        {
+            try
+            {
+                Usuario result;
+                if (activate)
+                {
+                    result = await _userService.EnableUser(idUser);
+                }
+                else
+                {
+                    result = await _userService.DisableUser(idUser);
+                }
+
+                if (result == null)
+                    return NotFound($"Couldn't find a user with id: {idUser}");
+
+                return Ok(new
+                {
+                    message = activate ? "User activated successfully" : "User deactivated successfully",
+                    usuario = result
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error updating user state: {ex.Message}");
             }
         }
     }
