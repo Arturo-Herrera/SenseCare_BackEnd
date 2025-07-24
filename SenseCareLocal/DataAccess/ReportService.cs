@@ -19,25 +19,54 @@ public class ReportService
     {
 		var reports = $@"
             [
-				{{""$lookup"": {{
-					""from"": ""Paciente"",
-					""localField"": ""IDPaciente"",
-					""foreignField"": ""_id"",
-					""as"": ""datosPaciente""
-				}}}},
-				{{ ""$unwind"": ""$datosPaciente""}},
-				{{ ""$match"": {{""datosPaciente._id"": {idPatient} }}}},
-				{{ ""$project"": {{
-					""fecha"": 1,
-					""motivo"": 1,
-					""diagnostico"": 1,
-					""tratamiento"": 1,
-					""observaciones"": 1,
-					""IDMedico"": 1,
-					""IDAlertas"": 1,
-					""IDPaciente"": 1
-				}}}}
-			]";
+  {{
+    $lookup: {{
+      from: ""Paciente"",
+      localField: ""IDPaciente"",
+      foreignField: ""_id"",
+      as: ""datosPaciente""
+    }}
+  }},
+  {{ $unwind: ""$datosPaciente"" }},
+  {{ $match: {{ ""datosPaciente._id"": {idPatient} }} }},
+  {{
+    $lookup: {{
+      from: ""Alertas"",
+      localField: ""IDAlertas"",
+      foreignField: ""_id"",
+      as: ""datosAlerta""
+    }}
+  }},
+  {{
+    $lookup: {{
+      from: ""Usuario"",
+      localField: ""IDMedico"",
+      foreignField: ""_id"",
+      as: ""medico""
+    }}
+  }},
+  {{ $unwind: ""$medico"" }},
+  {{
+    $project: {{
+      fecha: 1,
+      motivo: 1,
+      diagnostico: 1,
+      tratamiento: 1,
+      observaciones: 1,
+      IDMedico: 1,
+      IDPaciente: 1,
+      datosAlerta: 1, 
+      nombreCompletoMedico: {{
+        $concat: [
+          ""$medico.nombre"", "" "",
+          ""$medico.apellidoPa"", "" "",
+          {{ $ifNull: [""$medico.apellidoMa"", """"] }}
+        ]
+      }}
+    }}
+  }}
+]
+";
 
         var bsonArray = BsonSerializer.Deserialize<BsonArray>(reports); // VAR
         var bsonDocuments = bsonArray.Select(stage => stage.AsBsonDocument).ToList();

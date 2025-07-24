@@ -24,13 +24,12 @@ namespace SenseCareLocal.Controllers
         {
             var alerts = await _alertService.GetAll(idPatient);
             var reports = await _reportService.GetAllByPatient(idPatient);
-            var patients = await _patientService.GetPatientSelect(); //TRAE TODOS PARA EL SELECT
+            //var patients = await _patientService.GetPatientSelect(); //TRAE TODOS PARA EL SELECT
 
             var result = new
             {
                 alertsPatient = alerts,
-                reportsPatient = reports,
-                selectPatients = patients
+                reportsPatient = reports
             };
 
             return Ok(result);

@@ -23,10 +23,13 @@ public class Report
     [BsonElement("IDMedico")]
     public int IDDoctor { get; set; }
 
-    [BsonElement("IDAlertas")]
-    public int[] Alerts { get; set; }
-
     [BsonElement("IDPaciente")]
     public int IDPatient { get; set; }
+
+    [BsonElement("datosAlerta")]
+    public Alert[] datosAlerta { get; set; }
+
+    [BsonElement("nombreCompletoMedico")]
+    public String nombreCompletoMedico { get; set; }
 }
 
