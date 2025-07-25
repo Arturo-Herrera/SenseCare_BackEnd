@@ -1,5 +1,5 @@
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using SenseCareLocal.Config;
+using SenseCareLocal.DataAccess;
 using SenseCareLocal.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +13,7 @@ builder.Services.AddSingleton<DeviceService>();
 builder.Services.AddSingleton<VitalSignsService>();
 builder.Services.AddSingleton<AlertService>();
 builder.Services.AddSingleton<ReportService>();
+builder.Services.AddSingleton<MapService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
