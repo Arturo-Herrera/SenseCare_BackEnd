@@ -12,10 +12,12 @@ namespace SenseCareLocal.Controllers
     public class UsersController : ControllerBase
     {
         private readonly UserService _userService;
+        private readonly DeviceService _devices;
 
-        public UsersController(UserService userService)
+        public UsersController(UserService userService , DeviceService devices)
         {
             _userService = userService;
+            _devices = devices;
         }
 
         [HttpGet]
@@ -98,6 +100,36 @@ namespace SenseCareLocal.Controllers
             catch (Exception ex)
             {
                 return BadRequest($"Error updating user state: {ex.Message}");
+            }
+        }
+
+        [HttpGet("caregivers")]
+        public async Task<ActionResult<List<Usuario>>> GetCaregivers()
+        {
+            try
+            {
+                var caregivers = await _userService.GetAvailableCaregivers();
+                var devices = await _devices.GetAvailableDevices();
+
+                var info = new
+                {
+                    AvailableCaregivers = caregivers,
+                    availableDevices = devices
+                };
+
+                var result = new JSONResponse
+                {
+                    Status = 0,
+                    Message = "Succesfull retrieved information",
+                    MessageType = MessageType.Success,
+                    Data = info
+                };
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error retrieving caregivers: {ex.Message}");
             }
         }
     }
