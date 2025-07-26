@@ -218,40 +218,46 @@ public async Task InsertPulse(int idDevice, double value)
         var fechaInicio = DateTime.UtcNow.AddDays(-7).Date;
 
         var avgByPatient = $@"
-    [
-        {{
+        [
+          {{
             ""$match"": {{ 
-                ""IDPaciente"": {idPaciente},
-                ""fecha"": {{ ""$gte"": new Date(""{fechaInicio:yyyy-MM-dd}"") }}
+              ""IDPaciente"": {idPaciente},
+              ""fecha"": {{ ""$gte"": new Date(""{fechaInicio:yyyy-MM-dd}"") }}
             }}
-        }},
-        {{
+          }},
+          {{
             ""$addFields"": {{
-                ""promedioPulsoDoc"": {{ ""$avg"": ""$pulso"" }}
+              ""promedioPulsoDoc"": {{ ""$avg"": ""$pulso"" }}
             }}
-        }},
-        {{
+          }},
+          {{
             ""$group"": {{
-                ""_id"": {{
-                    ""IDPaciente"": ""$IDPaciente"",
-                    ""dia"": {{ ""$dateToString"": {{ ""format"": ""%Y-%m-%d"", ""date"": ""$fecha"" }} }}
-                }},
-                ""promedioPulso"": {{ ""$avg"": ""$promedioPulsoDoc"" }},
-                ""promedioTemperatura"": {{ ""$avg"": ""$temperatura"" }},
-                ""promedioOxigeno"": {{ ""$avg"": ""$oxigeno"" }}
+              ""_id"": {{
+                ""IDPaciente"": ""$IDPaciente"",
+                ""dia"": {{
+                  ""$dateTrunc"": {{
+                    ""date"": ""$fecha"",
+                    ""unit"": ""day""
+                  }}
+                }}
+              }},
+              ""promedioPulso"": {{ ""$avg"": ""$promedioPulsoDoc"" }},
+              ""promedioTemperatura"": {{ ""$avg"": ""$temperatura"" }},
+              ""promedioOxigeno"": {{ ""$avg"": ""$oxigeno"" }}
             }}
-        }},
-        {{
+          }},
+          {{
             ""$project"": {{
-                ""_id"": 0,
-                ""IDPaciente"": ""$_id.IDPaciente"",
-                ""dia"": ""$_id.dia"",
-                ""promedioPulso"": {{ ""$round"": [""$promedioPulso"", 2] }},
-                ""promedioTemperatura"": {{ ""$round"": [""$promedioTemperatura"", 2] }},
-                ""promedioOxigeno"": {{ ""$round"": [""$promedioOxigeno"", 2] }}
+              ""_id"": 0,
+              ""IDPaciente"": ""$_id.IDPaciente"",
+              ""dia"": ""$_id.dia"",
+              ""promedioPulso"": {{ ""$round"": [""$promedioPulso"", 2] }},
+              ""promedioTemperatura"": {{ ""$round"": [""$promedioTemperatura"", 2] }},
+              ""promedioOxigeno"": {{ ""$round"": [""$promedioOxigeno"", 2] }}
             }}
-        }}
-    ]";
+          }}
+        ]";
+
 
         var bsonArray = BsonSerializer.Deserialize<BsonArray>(avgByPatient);
         var bsonDocuments = bsonArray.Select(stage => stage.AsBsonDocument).ToList();
