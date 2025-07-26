@@ -96,6 +96,34 @@ namespace SenseCareLocal.Services
             return await _users.Aggregate(pipeline).ToListAsync();
         }
 
+        public async Task<List<CaregiverId>> GetCaregivers()
+        {
+            var caregivers = @"
+            [
+                {
+                    ""$match"": {
+                        ""IDTipoUsuario._id"": ""CUID"",
+                        ""activo"": true
+                    }
+                },
+                {
+                    ""$project"": {
+                        _id: 1
+                    }
+                }
+            ]
+        ";
+
+
+            var bsonArray = BsonSerializer.Deserialize<BsonArray>(caregivers);
+            var bsonDocuments = bsonArray.Select(stage => stage.AsBsonDocument).ToList();
+
+            var pipeline = PipelineDefinition<User, CaregiverId>.Create(bsonDocuments);
+            var result = await _users.Aggregate(pipeline).ToListAsync();
+
+            return result;
+        }
+
         public async Task<Usuario> DisableUser(int idUser)
         {
             var filter = $@"{{ _id: {idUser} }}";

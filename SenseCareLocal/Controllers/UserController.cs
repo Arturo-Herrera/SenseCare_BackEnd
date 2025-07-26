@@ -100,5 +100,19 @@ namespace SenseCareLocal.Controllers
                 return BadRequest($"Error updating user state: {ex.Message}");
             }
         }
+
+        [HttpGet("caregivers")]
+        public async Task<ActionResult<List<Usuario>>> GetCaregivers()
+        {
+            try
+            {
+                var caregivers = await _userService.GetCaregivers();
+                return Ok(caregivers);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error retrieving caregivers: {ex.Message}");
+            }
+        }
     }
 }
