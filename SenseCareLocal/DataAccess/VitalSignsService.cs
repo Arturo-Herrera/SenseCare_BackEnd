@@ -25,7 +25,7 @@ public class VitalSignsService
                             .ToListAsync();
     }
 
-public async Task InsertPulse(int idDevice, int value)
+public async Task InsertPulse(int idDevice, double value)
 {
     var patient = await _patient.Find(p => p.IDDispositivo == idDevice).FirstOrDefaultAsync();
     if (patient == null)
@@ -56,7 +56,7 @@ public async Task InsertPulse(int idDevice, int value)
             Id = nextId,
             IDPaciente = patient.Id,
             Fecha = DateTime.Now,
-            Pulso = new List<int> { value },
+            Pulso = new List<double> { value },
             Temperatura = 0,
             Oxigeno = 0
         };
@@ -115,7 +115,7 @@ public async Task InsertPulse(int idDevice, int value)
             Id = nextId,
             IDPaciente = patient.Id,
             Fecha = DateTime.Now,
-            Pulso = new List<int>(),
+            Pulso = new List<double>(),
             Temperatura = temperature,
             Oxigeno = oxygen
         };

@@ -26,7 +26,7 @@ public class Report
     [BsonElement("IDPaciente")]
     public int IDPatient { get; set; }
 
-    [BsonElement("datosAlerta")]
+    [BsonElement("IDAlertas")]
     public Alert[] datosAlerta { get; set; }
 
     [BsonElement("nombreCompletoMedico")]

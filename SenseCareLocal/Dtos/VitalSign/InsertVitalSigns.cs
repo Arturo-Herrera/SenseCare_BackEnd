@@ -1,7 +1,7 @@
 ﻿public class PulsoDto
 {
     public int IdDispositivo { get; set; }
-    public int Valor { get; set; }
+    public double Valor { get; set; }
 }
 
 public class TempOxiDto

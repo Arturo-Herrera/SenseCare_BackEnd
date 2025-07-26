@@ -23,4 +23,19 @@ public class AlertsController : ControllerBase
         return Ok(alerts);
     }
 
+    [HttpPost]
+    public async Task<ActionResult<JSONResponse>> Create(Alert alert)
+    {
+        try
+        {
+            await _alertService.Create(alert);
+            var response = new JSONResponse { Status = 0, Message = "Alert Succesfully Added", MessageType = MessageType.Success };
+            return Ok(response);
+        }
+        catch (Exception e)
+        {
+            return BadRequest(new JSONResponse { Status = 1, Message = e.Message, MessageType = MessageType.Error });
+        }
+    }
+
 }
