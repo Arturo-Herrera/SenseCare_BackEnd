@@ -1,7 +1,7 @@
-﻿using MongoDB.Bson;
+﻿using Microsoft.Extensions.Options;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
-using Microsoft.Extensions.Options;
 using SenseCareLocal.Config;
 
 public class ReportService
@@ -15,9 +15,9 @@ public class ReportService
         _report = database.GetCollection<Report>("Informe");
     }
 
-    public async Task<List<Report>> GetAllByPatient(int idPatient)
+    public async Task<List<ReportAndDetails>> GetAllByPatient(int idPatient)
     {
-		var reports = $@"
+        var reports = $@"
             [
   {{
     $lookup: {{
@@ -55,7 +55,7 @@ public class ReportService
       observaciones: 1,
       IDMedico: 1,
       IDPaciente: 1,
-      datosAlerta: 1, 
+      datosAlerta: 1,
       nombreCompletoMedico: {{
         $concat: [
           ""$medico.nombre"", "" "",
@@ -71,23 +71,23 @@ public class ReportService
         var bsonArray = BsonSerializer.Deserialize<BsonArray>(reports); // VAR
         var bsonDocuments = bsonArray.Select(stage => stage.AsBsonDocument).ToList();
 
-        var pipeline = PipelineDefinition<Report, Report>.Create(bsonDocuments);// TASK
+        var pipeline = PipelineDefinition<Report, ReportAndDetails>.Create(bsonDocuments);// TASK
 
         var result = await _report.Aggregate(pipeline).ToListAsync();
 
         return result;
     }
 
-	public async Task Create(Report report)
-	{
-		var last = await _report.Find(_ => true)
-					   .SortByDescending(u => u.Id)
-					   .Limit(1).FirstOrDefaultAsync();
+    public async Task Create(Report report)
+    {
+        var last = await _report.Find(_ => true)
+                       .SortByDescending(u => u.Id)
+                       .Limit(1).FirstOrDefaultAsync();
 
-		report.Id = last != null ? last.Id + 1 : 1;
-		report.Date = report.Date.Date;
+        report.Id = last != null ? last.Id + 1 : 1;
+        report.Date = DateTime.Today;
 
-		await _report.InsertOneAsync(report);
-	}
+        await _report.InsertOneAsync(report);
+    }
 }
 

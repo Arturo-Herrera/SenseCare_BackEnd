@@ -1,6 +1,6 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
 
-public class Report
+public class ReportAndDetails
 {
     [BsonId]
     public int Id { get; set; }
@@ -26,7 +26,10 @@ public class Report
     [BsonElement("IDPaciente")]
     public int IDPatient { get; set; }
 
-    [BsonElement("IDAlertas")]
-    public int[] datosAlerta { get; set; }
+    [BsonElement("datosAlerta")]
+    public Alert[] datosAlerta { get; set; }
+
+    [BsonElement("nombreCompletoMedico")]
+    public string NombreCompletoMedico { get; set; }
 }
 
