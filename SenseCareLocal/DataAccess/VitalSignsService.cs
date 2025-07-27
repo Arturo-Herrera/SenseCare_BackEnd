@@ -25,44 +25,59 @@ public class VitalSignsService
                             .ToListAsync();
     }
 
-public async Task InsertPulse(int idDevice, double value)
-{
-    var patient = await _patient.Find(p => p.IDDispositivo == idDevice).FirstOrDefaultAsync();
-    if (patient == null)
-        throw new Exception("Patient not found");
-    var filtro = Builders<VitalSign>.Filter.Eq(s => s.IDPaciente, patient.Id);
-    var last = await _signs
-        .Find(filtro)
-        .SortByDescending(s => s.Fecha)
-        .FirstOrDefaultAsync();
-    if (last != null && (last.Temperatura == 0 || last.Oxigeno == 0))
+    public async Task InsertPulse(int idDevice, double value)
     {
-        var update = Builders<VitalSign>.Update.Push(s => s.Pulso, value);
-        await _signs.UpdateOneAsync(s => s.Id == last.Id, update);
-    }
-    else
-    {
-        // Obtener el máximo ID personalizado y sumarle 1
-        var maxIdDoc = await _signs
-                .Find(Builders<VitalSign>.Filter.Empty)
-                .SortByDescending(s => s.Id)
-                .Limit(1)
-                .FirstOrDefaultAsync();
+        var patient = await _patient.Find(p => p.IDDispositivo == idDevice).FirstOrDefaultAsync();
+        if (patient == null)
+            throw new Exception("Patient not found");
 
-        int nextId = (maxIdDoc?.Id ?? 0) + 1;
+        // Filtro para buscar documentos del paciente donde falta temperatura o oxigeno
+        var filtro = Builders<VitalSign>.Filter.And(
+            Builders<VitalSign>.Filter.Eq(s => s.IDPaciente, patient.Id),
+            Builders<VitalSign>.Filter.Or(
+                Builders<VitalSign>.Filter.Eq(s => s.Temperatura, 0),
+                Builders<VitalSign>.Filter.Eq(s => s.Oxigeno, 0)
+                //Builders<VitalSign>.Filter.Eq(s => s.Temperatura, BsonNull.Value),
+                //Builders<VitalSign>.Filter.Eq(s => s.Oxigeno, BsonNull.Value)
+            )
+        );
 
-        var newDoc = new VitalSign
+        var last = await _signs
+            .Find(filtro)
+            .SortByDescending(s => s.Fecha)
+            .FirstOrDefaultAsync();
+
+        if (last != null)
         {
-            Id = nextId,
-            IDPaciente = patient.Id,
-            Fecha = DateTime.Now,
-            Pulso = new List<double> { value },
-            Temperatura = 0,
-            Oxigeno = 0
-        };
-        await _signs.InsertOneAsync(newDoc);
+            var update = Builders<VitalSign>.Update.Push(s => s.Pulso, value);
+            await _signs.UpdateOneAsync(s => s.Id == last.Id, update);
+        }
+        else
+        {
+            // Obtener el máximo ID personalizado y sumarle 1
+            var maxIdDoc = await _signs
+                    .Find(Builders<VitalSign>.Filter.Empty)
+                    .SortByDescending(s => s.Id)
+                    .Limit(1)
+                    .FirstOrDefaultAsync();
+
+            int nextId = (maxIdDoc?.Id ?? 0) + 1;
+
+            var newDoc = new VitalSign
+            {
+                Id = nextId,
+                IDPaciente = patient.Id,
+                Fecha = DateTime.Now,
+                Pulso = new List<double> { value },
+                Temperatura = 0,
+                Oxigeno = 0,
+                Fuente = false // o true si aplica
+            };
+            await _signs.InsertOneAsync(newDoc);
+        }
     }
-}
+
+
 
 
     public async Task InsertTemperatureAndOxygen(int idDevice, double? temperature, double? oxygen)
