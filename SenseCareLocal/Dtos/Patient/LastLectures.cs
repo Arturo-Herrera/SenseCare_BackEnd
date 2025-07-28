@@ -7,13 +7,13 @@ public class LastLectures
     public int Id { get; set; }
 
     [BsonElement("pulso")]
-    public int[] Pulso { get; set; }
+    public double[] Pulso { get; set; }
 
     [BsonElement("temperatura")]
     public double Temperatura { get; set; }
 
     [BsonElement("oxigeno")]
-    public int Oxigeno { get; set; }
+    public double Oxigeno { get; set; }
 
     [BsonElement("fecha")]
     public string Fecha { get; set; }
