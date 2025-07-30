@@ -18,70 +18,74 @@ namespace SenseCareLocal.DataAccess
             _devices = database.GetCollection<Device>("Dispositivo");
         }
 
-        public async Task<List<Map>> GetAllDevicesWithPatient()
+        public async Task<List<Map>> GetAllDevicesWithPatient(int idMedic)
         {
             var deviceAndPatient = $@"
-            [
-              {{
-                $lookup: {{
-                  from: ""Paciente"",
-                  localField: ""_id"",
-                  foreignField: ""IDDispositivo"",
-                  as: ""paciente""
-                }}
-              }},
-              {{ $unwind: ""$paciente"" }},
-              {{
-                $lookup: {{
-                  from: ""Usuario"",
-                  localField: ""paciente.IDUsuario"",
-                  foreignField: ""_id"",
-                  as: ""usuario""
-                }}
-              }},
-              {{ $unwind: ""$usuario"" }},
-              {{
-                $lookup: {{
-                  from: ""Alertas"",
-                  localField: ""paciente._id"",
-                  foreignField: ""IDPaciente"",
-                  as: ""alertas""
-                }}
-              }},
-              {{ $unwind: ""$alertas"" }},
-              {{ $sort: {{ ""alertas.fecha"": -1 }} }},
-              {{
-                $group: {{
-                  _id: ""$paciente._id"",
-                  nombreCompleto: {{ $first: {{ $concat: [""$usuario.nombre"", "" "", ""$usuario.apellidoPa"", "" "", {{ $ifNull: [""$usuario.apellidoMa"", """" ] }} ] }} }},
-                  sexo: {{ $first: ""$usuario.sexo"" }},
-                  latitud: {{ $first: ""$latitud"" }},
-                  longitud: {{ $first: ""$longitud"" }},
-                  ultimaAlerta: {{ $first: ""$alertas"" }}
-                }}
-              }},
-              {{
-                $project: {{
-                  _id: 0,
-                  nombreCompleto: 1,
-                  sexo: 1,
-                  latitud: 1,
-                  longitud: 1,
-                  alerta: ""$ultimaAlerta""
-                }}
-              }}
-            ]
-            ";
+                [
+                  {{
+                    $lookup: {{
+                      from: ""Paciente"",
+                      localField: ""_id"",
+                      foreignField: ""IDDispositivo"",
+                      as: ""paciente""
+                    }}
+                  }},
+                  {{ $unwind: ""$paciente"" }},
+                  {{
+                    $match: {{
+                      ""paciente.IDMedico"": {idMedic}
+                    }}
+                  }},
+                  {{
+                    $lookup: {{
+                      from: ""Usuario"",
+                      localField: ""paciente.IDUsuario"",
+                      foreignField: ""_id"",
+                      as: ""usuario""
+                    }}
+                  }},
+                  {{ $unwind: ""$usuario"" }},
+                  {{
+                    $lookup: {{
+                      from: ""Alertas"",
+                      localField: ""paciente._id"",
+                      foreignField: ""IDPaciente"",
+                      as: ""alertas""
+                    }}
+                  }},
+                  {{ $unwind: ""$alertas"" }},
+                  {{ $sort: {{ ""alertas.fecha"": -1 }} }},
+                  {{
+                    $group: {{
+                      _id: ""$paciente._id"",
+                      nombreCompleto: {{ $first: {{ $concat: [""$usuario.nombre"", "" "", ""$usuario.apellidoPa"", "" "", {{ $ifNull: [""$usuario.apellidoMa"", """" ] }} ] }} }},
+                      sexo: {{ $first: ""$usuario.sexo"" }},
+                      latitud: {{ $first: ""$latitud"" }},
+                      longitud: {{ $first: ""$longitud"" }},
+                      ultimaAlerta: {{ $first: ""$alertas"" }}
+                    }}
+                  }},
+                  {{
+                    $project: {{
+                      _id: 0,
+                      nombreCompleto: 1,
+                      sexo: 1,
+                      latitud: 1,
+                      longitud: 1,
+                      alerta: ""$ultimaAlerta""
+                    }}
+                  }}
+                ]
+                ";
 
-            var bsonArray = BsonSerializer.Deserialize<BsonArray>(deviceAndPatient); // VAR
+            var bsonArray = BsonSerializer.Deserialize<BsonArray>(deviceAndPatient);
             var bsonDocuments = bsonArray.Select(stage => stage.AsBsonDocument).ToList();
 
-            var pipeline = PipelineDefinition<Device, Map>.Create(bsonDocuments);// TASK
+            var pipeline = PipelineDefinition<Device, Map>.Create(bsonDocuments);
 
             var result = await _devices.Aggregate(pipeline).ToListAsync();
 
             return result;
-
         }
     }
 }

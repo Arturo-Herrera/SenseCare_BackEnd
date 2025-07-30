@@ -63,55 +63,44 @@ public class PatientService
         return await _patients.Find(p => p.IDCuidador == cuidadorId).FirstOrDefaultAsync();
     }
 
-    public async Task<List<ActivePatients>> GetActivePatients(int medicoId)
+    public async Task<ActivePatients> GetActivePatients(int medicoId)
     {
         var activePatients = $@"
-[
-    {{
-        ""$lookup"": {{
-            ""from"": ""Usuario"",
-            ""localField"": ""IDUsuario"",
-            ""foreignField"": ""_id"",
-            ""as"": ""usuario""
-        }}
-    }},
-    {{
-        ""$unwind"": ""$usuario""
-    }},
-    {{
-        ""$match"": {{
-            ""usuario.activo"": true,
-            ""IDMedico"": {medicoId}  
-        }}
-    }},
-    {{
-        ""$project"": {{
-            ""_id"": 0,
-            ""nombreCompleto"": {{
-                ""$concat"": [
-                    ""$usuario.nombre"", "" "", 
-                    ""$usuario.apellidoPa"", "" "", 
-                    {{ ""$ifNull"": [ ""$usuario.apellidoMa"", """" ] }}
-                ]
-            }},
-            ""fecNac"": {{
-                ""$dateToString"": {{ ""format"": ""%Y-%m-%d"", ""date"": ""$usuario.fecNac"" }}
-            }},
-            ""sexo"": ""$usuario.sexo""
-        }}
-    }}
-]
-";
+   [
+       {{
+           ""$lookup"": {{
+               ""from"": ""Usuario"",
+               ""localField"": ""IDUsuario"",
+               ""foreignField"": ""_id"",
+               ""as"": ""usuario""
+           }}
+       }},
+       {{
+           ""$unwind"": ""$usuario""
+       }},
+       {{
+           ""$match"": {{
+               ""usuario.activo"": true,
+               ""IDMedico"": {medicoId}
+           }}
+       }},
+       {{
+           ""$count"": ""pacientesActivos""
+       }}
+   ]
+   ";
+
 
         var bsonArray = BsonSerializer.Deserialize<BsonArray>(activePatients);
         var bsonDocuments = bsonArray.Select(stage => stage.AsBsonDocument).ToList();
 
         var pipeline = PipelineDefinition<Patient, ActivePatients>.Create(bsonDocuments);
 
-        var result = await _patients.Aggregate(pipeline).ToListAsync();  // Cambié a ToListAsync() para traer todos los pacientes
+        var result = await _patients.Aggregate(pipeline).FirstOrDefaultAsync();
 
         return result;
     }
+
 
 
     public async Task<List<InfoPatientResult>> GetInfoPatient(int idPatient)

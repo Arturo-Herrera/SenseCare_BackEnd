@@ -13,10 +13,10 @@ public class MapController : ControllerBase
         _mapService = mapService;
     }
 
-    [HttpGet("info")]
-    public async Task<IActionResult> GetMapData()
+    [HttpGet("info/{idMedic}")]
+    public async Task<IActionResult> GetMapData(int idMedic)
     {
-        var mapData = await _mapService.GetAllDevicesWithPatient();
+        var mapData = await _mapService.GetAllDevicesWithPatient(idMedic);
         if (mapData == null || mapData.Count == 0)
         {
             return NotFound(new { Status = 1, Message = "No data found", MessageType = "Warning" });
