@@ -5,8 +5,6 @@ using MongoDB.Driver;
 using SenseCareAPI.Helpers;
 using SenseCareLocal.Config;
 using SenseCareLocal.Services;
-using Microsoft.AspNetCore.Mvc;
-
 public class PatientService
 {
     private readonly IMongoCollection<Patient> _patients;
@@ -162,42 +160,48 @@ public class PatientService
         return result;
     }
 
-    public async Task<List<InfoPatientSelect>> GetPatientSelect()
+    public async Task<List<InfoPatientSelect>> GetPatientSelect(int idDoctor)
     {
-        var infoPatient = @"
-            [
-              {
-                ""$lookup"": {
-                  ""from"": ""Usuario"",
-                  ""localField"": ""IDUsuario"",
-                  ""foreignField"": ""_id"",
-                  ""as"": ""datosUsuario""
-                }
-              },
-              {
-                ""$unwind"": ""$datosUsuario""
-              },
-              {
-                ""$project"": {
-                  ""_id"": 1,
-                  ""nombreCompleto"": {
+        var infoPatient = $@"
+    [
+        {{
+            ""$match"": {{
+                ""IDMedico"": {idDoctor}
+            }}
+        }},
+        {{
+            ""$lookup"": {{
+                ""from"": ""Usuario"",
+                ""localField"": ""IDUsuario"",
+                ""foreignField"": ""_id"",
+                ""as"": ""datosUsuario""
+            }}
+        }},
+        {{
+            ""$unwind"": ""$datosUsuario""
+        }},
+        {{
+            ""$project"": {{
+                ""_id"": 1,
+                ""nombrePaciente"": {{
                     ""$concat"": [
-                      ""$datosUsuario.nombre"",
-                      "" "",
-                      ""$datosUsuario.apellidoPa""
+                        ""$datosUsuario.nombre"", "" "",
+                        ""$datosUsuario.apellidoPa"", "" "",
+                        {{ ""$ifNull"": [""$datosUsuario.apellidoMa"", """" ] }}
                     ]
-                  }
-                }
-              }
-            ]";
+                }}
+            }}
+        }}
+    ]";
 
-        var bsonArray = BsonSerializer.Deserialize<BsonArray>(infoPatient); // VAR
+        var bsonArray = BsonSerializer.Deserialize<BsonArray>(infoPatient);
         var bsonDocuments = bsonArray.Select(stage => stage.AsBsonDocument).ToList();
 
-        var pipeline = PipelineDefinition<Patient, InfoPatientSelect>.Create(bsonDocuments);// TASK
+        var pipeline = PipelineDefinition<Patient, InfoPatientSelect>.Create(bsonDocuments);
 
         var result = await _patients.Aggregate(pipeline).ToListAsync();
 
         return result;
     }
+
 }

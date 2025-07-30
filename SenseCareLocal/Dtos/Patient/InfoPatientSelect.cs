@@ -5,7 +5,7 @@ public class InfoPatientSelect
     [BsonId]
     public int Id { get; set; }
 
-    [BsonElement("nombreCompleto")]
+    [BsonElement("nombrePaciente")]
     public string FullName { get; set; }
 }
 

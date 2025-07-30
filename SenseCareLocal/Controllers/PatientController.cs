@@ -140,7 +140,7 @@ public class PatientController : ControllerBase
     {
         //try
         //{
-            var vitalSigns = await _vitalSignService.GetAveragePatient(idPatient);//!
+            var vitalSigns = await _vitalSignService.GetAveragePatient(idPatient);
             var infoPatient = await _patientService.GetInfoPatient(idPatient);
             var lastAlerts = await _alertsService.GetLastAlerts(idPatient);
             var lastLectures = await _vitalSignService.GetLastLectures(idPatient);
@@ -175,12 +175,12 @@ public class PatientController : ControllerBase
         //}
     }
 
-    [HttpGet("getSelect")]
-    public async Task<ActionResult> GetInfoPatientSelect()
+    [HttpGet("getSelect/{idDoctor}")]
+    public async Task<ActionResult> GetInfoPatientSelect(int idDoctor)
     {
         try
         {
-            var result = await _patientService.GetPatientSelect();// SELECT A PATIENT
+            var result = await _patientService.GetPatientSelect(idDoctor);// SELECT A PATIENT
 
             return Ok(new JSONResponse
             {
@@ -190,14 +190,9 @@ public class PatientController : ControllerBase
                 Data = result
             });
         }
-        catch
+        catch(Exception ex)
         {
-            return NotFound(new JSONResponse
-            {
-                Status = 1,
-                Message = "No data found",
-                MessageType = MessageType.Warning
-            });
+            return Ok(ex.Message);
         }
 
     }
