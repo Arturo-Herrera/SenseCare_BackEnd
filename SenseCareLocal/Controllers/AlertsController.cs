@@ -14,14 +14,30 @@ public class AlertsController : ControllerBase
         _alertService = alertService;
     }
 
+    [HttpGet("getByPatient/{idCaregiver}")]
+    public async Task<ActionResult> GetAlertsByPatient(int idCaregiver)
+    {
+        try
+        {
+            var alerts = await _alertService.GetByPatient(idCaregiver);
+
+            return Ok(alerts);
+        }
+        catch (Exception ex)
+        {
+            return Ok(ex.Message);
+        }
+    }
+
     [HttpGet("getTotalsToday")]
 
-    public async Task<ActionResult> GetTotalsToday()
+    public async Task<ActionResult> GetTotalsToday(int idMedic)
     {
-        var alerts = await _alertService.GetTotalsToday();
+        var alerts = await _alertService.GetTotalsToday(idMedic);
 
         return Ok(alerts);
     }
+
 
     [HttpPost]
     public async Task<ActionResult<JSONResponse>> Create(Alert alert)

@@ -37,8 +37,8 @@ public class VitalSignsService
             Builders<VitalSign>.Filter.Or(
                 Builders<VitalSign>.Filter.Eq(s => s.Temperatura, 0),
                 Builders<VitalSign>.Filter.Eq(s => s.Oxigeno, 0)
-                //Builders<VitalSign>.Filter.Eq(s => s.Temperatura, BsonNull.Value),
-                //Builders<VitalSign>.Filter.Eq(s => s.Oxigeno, BsonNull.Value)
+            //Builders<VitalSign>.Filter.Eq(s => s.Temperatura, BsonNull.Value),
+            //Builders<VitalSign>.Filter.Eq(s => s.Oxigeno, BsonNull.Value)
             )
         );
 
@@ -140,82 +140,114 @@ public class VitalSignsService
 
 
 
-    public async Task<List<AverageVitalsPerDay>> GetAverageVitalsPerDay()//comprobar
+    public async Task<List<AverageVitalsPerDay>> GetAverageVitalsPerDay(int idMedic)
     {
         var fechaInicio = DateTime.UtcNow.AddDays(-7).Date;
 
         var averageDaily = $@"
-        [
-          {{
-            ""$match"": {{
-              ""fecha"": {{ $gte: new Date(""{fechaInicio:yyyy-MM-dd}"") }}
-            }}
+[
+  {{
+    ""$match"": {{
+      ""fecha"": {{ ""$gte"": ISODate(""{fechaInicio:yyyy-MM-dd}T00:00:00.000Z"") }}
+    }}
+  }},
+  {{
+    ""$lookup"": {{
+      ""from"": ""Paciente"",
+      ""localField"": ""IDPaciente"",
+      ""foreignField"": ""_id"",
+      ""as"": ""paciente""
+    }}
+  }},
+  {{
+    ""$unwind"": ""$paciente""
+  }},
+  {{
+    ""$match"": {{
+      ""paciente.IDMedico"": {idMedic}
+    }}
+  }},
+  {{
+    ""$group"": {{
+      ""_id"": null,
+      ""datos"": {{
+        ""$push"": {{
+          ""fecha"": {{
+            ""$dateToString"": {{ ""format"": ""%Y-%m-%d"", ""date"": ""$fecha"" }}
           }},
-          {{
-            ""$group"": {{
-              ""_id"": null,
-              ""datos"": {{
-                ""$push"": {{
-                  ""fecha"": {{
-                    ""$dateToString"": {{ ""format"": ""%Y-%m-%d"", ""date"": ""$fecha"" }}
-                  }},
-                  ""temperatura"": ""$temperatura"",
-                  ""pulso"": ""$pulso""
-                }}
-              }}
-            }}
-          }},
-          {{
-            ""$unwind"": ""$datos""
-          }},
-          {{
-            ""$group"": {{
-              ""_id"": ""$datos.fecha"",
-              ""promedioTemperatura"": {{ ""$avg"": ""$datos.temperatura"" }},
-              ""promedioPulso"": {{ ""$avg"": {{ ""$avg"": ""$datos.pulso"" }} }}
-            }}
-          }},
-          {{
-            ""$project"": {{
-              ""_id"": 0,
-              ""fecha"": ""$_id"",
-              ""promedioTemperatura"": {{ ""$round"": [""$promedioTemperatura"", 2] }},
-              ""promedioPulso"": {{ ""$round"": [""$promedioPulso"", 2] }}
-            }}
-          }},
-          {{
-            ""$sort"": {{ ""fecha"": 1 }}
-          }}
-        ]
-        ";
+          ""temperatura"": ""$temperatura"",
+          ""pulso"": ""$pulso""
+        }}
+      }}
+    }}
+  }},
+  {{
+    ""$unwind"": ""$datos""
+  }},
+  {{
+    ""$group"": {{
+      ""_id"": ""$datos.fecha"",
+      ""promedioTemperatura"": {{ ""$avg"": ""$datos.temperatura"" }},
+      ""promedioPulso"": {{ ""$avg"": {{ ""$avg"": ""$datos.pulso"" }} }}
+    }}
+  }},
+  {{
+    ""$project"": {{
+      ""_id"": 0,
+      ""fecha"": ""$_id"",
+      ""promedioTemperatura"": {{ ""$round"": [""$promedioTemperatura"", 2] }},
+      ""promedioPulso"": {{ ""$round"": [""$promedioPulso"", 2] }}
+    }}
+  }},
+  {{
+    ""$sort"": {{ ""fecha"": 1 }}
+  }}
+]
+";
 
-        var bsonArray = BsonSerializer.Deserialize<BsonArray>(averageDaily); // VAR
+        var bsonArray = BsonSerializer.Deserialize<BsonArray>(averageDaily);
         var bsonDocuments = bsonArray.Select(stage => stage.AsBsonDocument).ToList();
-
-        var pipeline = PipelineDefinition<VitalSign, AverageVitalsPerDay>.Create(bsonDocuments);// TASK
+        var pipeline = PipelineDefinition<VitalSign, AverageVitalsPerDay>.Create(bsonDocuments);
 
         var result = await _signs.Aggregate(pipeline).ToListAsync();
 
         return result;
     }
 
-    public async Task<AverageOxygenLevel> GetOxygenLevelAvg()
+
+    public async Task<AverageOxygenLevel> GetOxygenLevelAvg(int idMedic)
     {
         var avgOxygen = $@"
-            [
-              {{
-                $group: {{
-                  _id: null, 
-                  promedioOxigeno: {{ $avg: ""$oxigeno"" }}
-                }}
-              }},
-              {{
-                $project: {{
-                  _id: 0,
-                  promedioOxigeno: {{ $round: [""$promedioOxigeno"", 0] }}
-                }}
-              }}
-            ]";
+    [
+        {{
+            ""$lookup"": {{
+                ""from"": ""Paciente"",
+                ""localField"": ""IDPaciente"",
+                ""foreignField"": ""_id"",
+                ""as"": ""paciente""
+            }}
+        }},
+        {{
+            ""$unwind"": ""$paciente""
+        }},
+        {{
+            ""$match"": {{
+                ""paciente.IDMedico"": {idMedic}
+            }}
+        }},
+        {{
+            ""$group"": {{
+                ""_id"": null,
+                ""promedioOxigeno"": {{ ""$avg"": ""$oxigeno"" }}
+            }}
+        }},
+        {{
+            ""$project"": {{
+                ""_id"": 0,
+                ""promedioOxigeno"": {{ ""$round"": [""$promedioOxigeno"", 2] }}
+            }}
+        }}
+    ]";
 
         var bsonArray = BsonSerializer.Deserialize<BsonArray>(avgOxygen);
         var bsonDocuments = bsonArray.Select(stage => stage.AsBsonDocument).ToList();
@@ -226,6 +258,8 @@ public class VitalSignsService
 
         return result;
     }
+
+
 
     public async Task<List<AverageVitalSign>> GetAveragePatient(int idPaciente)
     {

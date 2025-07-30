@@ -2,7 +2,11 @@
 
 public class ActivePatients
 {
-    [BsonElement("pacientesActivos")]
-    public int PacientesActivos { get; set; }
-}
+    [BsonElement("nombreCompleto")]
 
+    public string nombreCompleto { get; set; }
+
+    public string fecNac { get; set; }
+
+    public string sexo { get; set; }
+}

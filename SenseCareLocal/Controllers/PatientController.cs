@@ -57,9 +57,9 @@ public class PatientController : ControllerBase
 
     [HttpGet("dailyAverage")]
 
-    public async Task<ActionResult> GetDailyAverage()
+    public async Task<ActionResult> GetDailyAverage(int idMedic)
     {
-        var averages = await _vitalSignService.GetAverageVitalsPerDay();
+        var averages = await _vitalSignService.GetAverageVitalsPerDay(idMedic);
         if (averages == null || !averages.Any())
             return NotFound(new JSONResponse { Status = 1, Message = "No data found", MessageType = MessageType.Warning });
         return Ok(new JSONResponse
@@ -71,12 +71,12 @@ public class PatientController : ControllerBase
         });
     }
 
-    [HttpGet("activePatients")]
-    public async Task<ActionResult> GetActivePatients()
+    [HttpGet("activePatients/{idMedic}")]
+    public async Task<ActionResult> GetActivePatients(int idMedic)
     {
         try
         {
-            var activePatients = await _patientService.GetActivePatients();
+            var activePatients = await _patientService.GetActivePatients(idMedic);
             return Ok(new JSONResponse
             {
                 Status = 0,
@@ -85,28 +85,30 @@ public class PatientController : ControllerBase
                 Data = activePatients
             });
         }
-        catch
+        catch (Exception ex)
         {
+
             return NotFound(new JSONResponse
             {
                 Status = 1,
-                Message = "No data found",
+                Message = $"Error: {ex.Message}",
                 MessageType = MessageType.Warning
             });
-
         }
     }
 
 
-    [HttpGet("dashboard/data")]
-    public async Task<ActionResult> GetDashboardData()
+
+    [HttpGet("dashboard/data/{idMedic}")]
+    public async Task<ActionResult> GetDashboardData(int idMedic)
     {
         try
         {
-            var vitalSigns = await _vitalSignService.GetAverageVitalsPerDay();
-            var activePatients = await _patientService.GetActivePatients();
-            var alerts = await _alertsService.GetTotalsToday();
-            var oxygen = await _vitalSignService.GetOxygenLevelAvg();
+
+            var vitalSigns = await _vitalSignService.GetAverageVitalsPerDay(idMedic);
+            var activePatients = await _patientService.GetActivePatients(idMedic);
+            var alerts = await _alertsService.GetTotalsToday(idMedic);
+            var oxygen = await _vitalSignService.GetOxygenLevelAvg(idMedic);
 
             var result = new
             {
@@ -135,24 +137,25 @@ public class PatientController : ControllerBase
         }
     }
 
+
     [HttpGet("patients/data/{idPatient}")]
     public async Task<ActionResult> GetPatientData(int idPatient)
     {
         //try
         //{
-            var vitalSigns = await _vitalSignService.GetAveragePatient(idPatient);
-            var infoPatient = await _patientService.GetInfoPatient(idPatient);
-            var lastAlerts = await _alertsService.GetLastAlerts(idPatient);
-            var lastLectures = await _vitalSignService.GetLastLectures(idPatient);
+        var vitalSigns = await _vitalSignService.GetAveragePatient(idPatient);
+        var infoPatient = await _patientService.GetInfoPatient(idPatient);
+        var lastAlerts = await _alertsService.GetLastAlerts(idPatient);
+        var lastLectures = await _vitalSignService.GetLastLectures(idPatient);
 
 
-            var result = new
-            {
-                patient = infoPatient,
-                averageVitals = vitalSigns,
-                alerts = lastAlerts,
-                lectures = lastLectures
-            };
+        var result = new
+        {
+            patient = infoPatient,
+            averageVitals = vitalSigns,
+            alerts = lastAlerts,
+            lectures = lastLectures
+        };
 
         return Ok(result);
 
@@ -190,7 +193,7 @@ public class PatientController : ControllerBase
                 Data = result
             });
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             return Ok(ex.Message);
         }

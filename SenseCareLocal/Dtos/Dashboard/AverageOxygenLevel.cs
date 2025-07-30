@@ -3,6 +3,5 @@
 public class AverageOxygenLevel
 {
     [BsonElement("promedioOxigeno")]
-    public int PromedioOxigeno { get; set; }
+    public double promedioOxigeno { get; set; }
 }
-

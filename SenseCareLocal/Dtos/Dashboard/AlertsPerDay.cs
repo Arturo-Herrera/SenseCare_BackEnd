@@ -4,6 +4,6 @@ using MongoDB.Bson.Serialization.Attributes;
 public class AlertsPerDay
 {
     [BsonElement("promedioAlertasPorDia")]
-    public int TotalAlertas { get; set; }
-}
+    public double promedioAlertasPorDia { get; set; }
 
+}

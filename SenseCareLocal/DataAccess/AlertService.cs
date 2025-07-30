@@ -9,13 +9,57 @@ namespace SenseCareLocal.Services
     public class AlertService
     {
         private readonly IMongoCollection<Alert> _alerts;
+        private readonly IMongoCollection<Patient> _patient;
 
         public AlertService(IOptions<MongoDBSettings> config)
         {
             var client = new MongoClient(config.Value.ConnectionString);
             var database = client.GetDatabase(config.Value.DatabaseName);
             _alerts = database.GetCollection<Alert>("Alertas");
+            _patient = database.GetCollection<Patient>("Paciente");
         }
+
+        public async Task<List<Alert>> GetByPatient(int idCaregiver)
+        {
+            var pipelineJson = @$"[ 
+    {{
+        ""$match"": {{ ""IDCuidador"": {idCaregiver} }}
+    }},
+    {{
+        ""$lookup"": {{
+            ""from"": ""Alertas"",
+            ""localField"": ""_id"",
+            ""foreignField"": ""IDPaciente"",
+            ""as"": ""alertas""
+        }}
+    }},
+    {{
+        ""$unwind"": ""$alertas""
+    }},
+    {{
+        ""$project"": {{
+            ""_id"": ""$alertas._id"",
+            ""fecha"": ""$alertas.fecha"",
+            ""signoAfectado"": ""$alertas.signoAfectado"",
+            ""IDPaciente"": ""$alertas.IDPaciente"",
+            ""IDTipoAlerta"": ""$alertas.IDTipoAlerta""
+        }}
+    }},
+    {{
+        ""$sort"": {{ ""fecha"": -1 }}
+    }}
+]";
+
+            var bsonArray = BsonSerializer.Deserialize<BsonArray>(pipelineJson); // VAR
+            var bsonDocuments = bsonArray.Select(stage => stage.AsBsonDocument).ToList();
+
+            var pipeline = PipelineDefinition<Patient, Alert>.Create(bsonDocuments);// TASK
+
+            var result = await _patient.Aggregate(pipeline).ToListAsync();
+
+            return result;
+        }
+
 
         public async Task<List<Alert>> GetAll(int idPatient)
         {
@@ -61,29 +105,46 @@ namespace SenseCareLocal.Services
             alert.IDTipoAlerta = alert.IDTipoAlerta ?? "N/A"; // Default value if null
         }//CAMBIAR SI SON NULL Y DATOS DE RETORNO
 
-        public async Task<AlertsPerDay> GetTotalsToday()
+        public async Task<AlertsPerDay> GetTotalsToday(int idMedic)
         {
             var alerts = $@"
-                [
-                    {{
-                      '$group': {{
-                        '_id': {{ '$dateToString': {{ 'format': '%Y-%m-%d', 'date': '$fecha' }} }},
-                        'totalAlertas': {{ '$sum': 1 }}
-                      }}
-                    }},
-                    {{
-                      '$group': {{
-                        '_id': null,
-                        'promedio': {{ '$avg': '$totalAlertas' }}
-                      }}
-                    }},
-                    {{
-                      '$project': {{
-                        '_id': 0,
-                        'promedioAlertasPorDia': {{ '$round': [ '$promedio', 0 ] }}
-                      }}
-                    }}
-                ]";
+               [
+  {{
+    $lookup: {{
+      from: ""Paciente"",
+      localField: ""IDPaciente"",
+      foreignField: ""_id"",
+      as: ""paciente""
+    }}
+  }},
+  {{ $unwind: ""$paciente"" }},
+  {{
+    $match: {{
+      ""paciente.IDMedico"": {idMedic} 
+    }}
+  }},
+  {{
+    $group: {{
+      _id: {{
+        $dateToString: {{ format: ""%Y-%m-%d"", date: ""$fecha"" }}
+      }},
+      totalAlertas: {{ $sum: 1 }}
+    }}
+  }},
+  {{
+    $group: {{
+      _id: null,
+      promedio: {{ $avg: ""$totalAlertas"" }}
+    }}
+  }},
+  {{
+    $project: {{
+      _id: 0,
+      promedioAlertasPorDia: {{ $round: [""$promedio"", 2] }}
+    }}
+  }}
+])
+";
 
             var bsonArray = BsonSerializer.Deserialize<BsonArray>(alerts);
             var bsonDocuments = bsonArray.Select(stage => stage.AsBsonDocument).ToList();
@@ -95,6 +156,8 @@ namespace SenseCareLocal.Services
             return result;
 
         }
+
+
 
         public async Task<List<LastAlerts>> GetLastAlerts(int idPatient) // MINUTOS DESDE QUE PASARON
         {
