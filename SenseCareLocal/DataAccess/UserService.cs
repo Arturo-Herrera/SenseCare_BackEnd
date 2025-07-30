@@ -71,14 +71,14 @@ namespace SenseCareLocal.Services
             {
                 ""$project"": {
                     ""_id"": 1,
-                    ""nombreCompleto"": {
-                        ""$concat"" : [""$nombre"", "" "", ""$apellidoPa"", "" "", {""$ifNull"": [""$apellidoMa"", """"]}]
-                    },
+                    ""nombre"": 1,
+                    ""apellidoPa"": 1,
+                    ""apellidoMa"": 1,
                     ""fecNac"": 1,
                     ""sexo"": 1,
-                    ""direccionCompleta"" : {
-                        ""$concat"" : [""$dirColonia"", "" "", ""$dirCalle"", "" "", ""$dirNum""]
-                    },
+                    ""dirColonia"": 1,
+                    ""dirCalle"": 1,
+                    ""dirNum"": 1,
                     ""telefono"": 1,
                     ""email"": 1,
                     ""activo"": 1,

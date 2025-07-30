@@ -13,31 +13,47 @@ public class UserFilterData
     [BsonId]
     public int Id { get; set; }
 
-    [BsonElement("nombreCompleto")]
-    public string FullName { get; set; }
+    [BsonElement("nombre")]
+    public string Nombre { get; set; }
+
+    [BsonElement("apellidoPa")]
+    public string ApellidoPa { get; set; }
+
+
+    [BsonElement("apellidoMa")]
+    public string ApellidoMa { get; set; }
 
     [BsonElement("fecNac")]
-    public DateTime BirthDate { get; set; }
+    public DateTime FecNac { get; set; }
 
     [BsonElement("sexo")]
-    public string Gender { get; set; }
+    public string Sexo { get; set; }
 
-    [BsonElement("direccionCompleta")]
-    public string FullAddress { get; set; }
+    [BsonElement("dirColonia")]
+    public string DirColonia { get; set; }
+
+    [BsonElement("dirCalle")]
+    public string DirCalle { get; set; }
+
+    [BsonElement("dirNum")]
+    public string DirNum { get; set; }
 
     [BsonElement("telefono")]
-    public string PhoneNumber { get; set; }
+    public string Telefono { get; set; }
 
     [BsonElement("email")]
     public string Email { get; set; }
 
+    [BsonElement("contrasena")]
+    public string Contrasena { get; set; }
+
     [BsonElement("activo")]
-    public bool Active { get; set; }
+    public bool Activo { get; set; }
 
     [BsonElement("IDTipoUsuario")]
     public string IDUserType { get; set; }
 
     [BsonElement("DescripcionTipoUsuario")]
     public string DescriptionUserType { get; set; }
-} 
+}
 
