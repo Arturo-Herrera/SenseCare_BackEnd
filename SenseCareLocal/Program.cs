@@ -14,6 +14,8 @@ builder.Services.AddSingleton<VitalSignsService>();
 builder.Services.AddSingleton<AlertService>();
 builder.Services.AddSingleton<ReportService>();
 builder.Services.AddSingleton<MapService>();
+builder.Services.AddSingleton<TriggerDevice>();
+
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
