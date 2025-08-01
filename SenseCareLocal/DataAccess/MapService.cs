@@ -45,6 +45,11 @@ namespace SenseCareLocal.DataAccess
                     }}
                   }},
                   {{ $unwind: ""$usuario"" }},
+                {{
+                    $match: {{
+                      ""usuario.activo"": true
+                    }}
+                  }},
                   {{
                     $lookup: {{
                       from: ""Alertas"",

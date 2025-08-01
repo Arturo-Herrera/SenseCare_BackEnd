@@ -174,5 +174,59 @@ namespace SenseCareLocal.Services
             return result;
         }
 
+        public async Task<Usuario> UpdateUser(Usuario user)
+        {
+            var filter = Builders<User>.Filter.Eq(u => u.Id, user.Id);
+
+            var update = Builders<User>.Update
+                .Set(u => u.Nombre, user.Nombre)
+                .Set(u => u.ApellidoPa, user.ApellidoPa)
+                .Set(u => u.ApellidoMa, user.ApellidoMa ?? "")
+                .Set(u => u.FecNac, user.FecNac.Date)
+                .Set(u => u.Sexo, user.Sexo)
+                .Set(u => u.DirColonia, user.DirColonia)
+                .Set(u => u.DirCalle, user.DirCalle)
+                .Set(u => u.DirNum, user.DirNum)
+                .Set(u => u.Telefono, user.Telefono)
+                .Set(u => u.Email, user.Email)
+                .Set(u => u.Activo, user.Activo);
+
+            if (!string.IsNullOrWhiteSpace(user.Contrasena))
+            {
+                update = update.Set(u => u.Contrasena, PasswordHelper.Hash(user.Contrasena));
+            }
+
+            if (user.IDTipoUsuario != null)
+            {
+                update = update.Set(u => u.IDTipoUsuario, user.IDTipoUsuario);
+            }
+
+            var options = new FindOneAndUpdateOptions<User>
+            {
+                ReturnDocument = ReturnDocument.After
+            };
+
+            var updatedUser = await _users.FindOneAndUpdateAsync(filter, update, options);
+
+            return new Usuario
+            {
+                Id = updatedUser.Id,
+                Nombre = updatedUser.Nombre,
+                ApellidoPa = updatedUser.ApellidoPa,
+                ApellidoMa = updatedUser.ApellidoMa,
+                FecNac = updatedUser.FecNac,
+                Sexo = updatedUser.Sexo,
+                DirColonia = updatedUser.DirColonia,
+                DirCalle = updatedUser.DirCalle,
+                DirNum = updatedUser.DirNum,
+                Telefono = updatedUser.Telefono,
+                Email = updatedUser.Email,
+                Contrasena = updatedUser.Contrasena,
+                Activo = updatedUser.Activo,
+                IDTipoUsuario = updatedUser.IDTipoUsuario
+            };
+        }
+
+
     }
 }

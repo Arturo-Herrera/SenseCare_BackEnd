@@ -14,7 +14,7 @@ namespace SenseCareLocal.Controllers
         private readonly UserService _userService;
         private readonly DeviceService _devices;
 
-        public UsersController(UserService userService , DeviceService devices)
+        public UsersController(UserService userService, DeviceService devices)
         {
             _userService = userService;
             _devices = devices;
@@ -132,5 +132,35 @@ namespace SenseCareLocal.Controllers
                 return BadRequest($"Error retrieving caregivers: {ex.Message}");
             }
         }
+
+        [HttpPut("updateUser")]
+        public async Task<ActionResult> UpdateUser([FromBody] Usuario user)
+        {
+            try
+            {
+                if (user == null || user.Id == 0)
+                {
+                    return BadRequest("Datos de usuario inválidos.");
+                }
+
+                var updatedUser = await _userService.UpdateUser(user);
+
+                if (updatedUser == null)
+                {
+                    return NotFound($"No se encontró un usuario con ID {user.Id}.");
+                }
+
+                return Ok(new
+                {
+                    message = "Usuario actualizado correctamente.",
+                    usuario = updatedUser
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error al actualizar el usuario: {ex.Message}");
+            }
+        }
+
     }
 }
