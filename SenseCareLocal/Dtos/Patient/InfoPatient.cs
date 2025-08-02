@@ -74,4 +74,10 @@ public class CuidadorInfo
 
     [BsonElement("apellido")]
     public string Apellido { get; set; }
+
+    [BsonElement("telefono")]
+    public string Telefono { get; set; }
+
+    [BsonElement("email")]
+    public string Email { get; set; }
 }

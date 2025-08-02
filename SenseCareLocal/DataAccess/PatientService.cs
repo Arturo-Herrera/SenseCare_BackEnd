@@ -143,7 +143,9 @@ public class PatientService
                     ""cuidador"": {{
                     ""_id"": {{ ""$arrayElemAt"": [""$datosCuidador._id"", 0] }},
                     ""nombre"": {{ ""$arrayElemAt"": [""$datosCuidador.nombre"", 0] }},
-                    ""apellido"": {{ ""$arrayElemAt"": [""$datosCuidador.apellidoPa"", 0] }}
+                    ""apellido"": {{ ""$arrayElemAt"": [""$datosCuidador.apellidoPa"", 0] }},
+                    ""telefono"": {{ ""$arrayElemAt"": [""$datosCuidador.telefono"", 0] }},
+                    ""email"": {{ ""$arrayElemAt"": [""$datosCuidador.email"", 0] }}
                     }},
                     ""dispositivo"": {{
                     ""$arrayElemAt"": [""$datosDispositivo"", 0]
