@@ -184,6 +184,11 @@ public class PatientService
             ""$unwind"": ""$datosUsuario""
         }},
         {{
+            ""$match"": {{
+                ""datosUsuario.activo"": true
+            }}
+        }},
+        {{
             ""$project"": {{
                 ""_id"": 1,
                 ""nombrePaciente"": {{

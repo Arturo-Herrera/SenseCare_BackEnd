@@ -27,5 +27,9 @@ public class TriggerDeviceController : ControllerBase
         bool shouldRead = _trigger.ConsumeTrigger(id);
         return Ok(new { readNow = shouldRead });
     }
+<<<<<<< HEAD
 }
 
+=======
+}
+>>>>>>> 4d927fa154dfc7c4f7e63f1651371c190af17311
