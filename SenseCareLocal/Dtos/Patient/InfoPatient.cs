@@ -31,6 +31,9 @@ public class Usuario
     [BsonElement("apellidoMa")]
     public string ApellidoMa { get; set; }
 
+    [BsonElement("foto")]
+    public string? Foto { get; set; }
+
     [BsonElement("fecNac")]
     [JsonConverter(typeof(DateOnlyJsonConverter))]
     public DateTime FecNac { get; set; }

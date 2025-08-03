@@ -26,16 +26,17 @@ public class PatientService
             Nombre = dto.Nombre,
             ApellidoPa = dto.ApellidoPa,
             ApellidoMa = dto.ApellidoMa,
+            Foto = dto.Foto,
             FecNac = dto.FecNac.Date,
             Sexo = dto.Sexo,
             DirColonia = dto.DirColonia,
             DirCalle = dto.DirCalle,
             DirNum = dto.DirNum,
             Telefono = dto.Telefono,
-            Email = dto.Email,
-            Contrasena = PasswordHelper.Hash(dto.Contrasena),
+            Email = "",
+            Contrasena = "",
             Activo = true,
-            IDTipoUsuario = new UserRole { Id = "PAC", Descripcion = "Paciente" }
+            IDTipoUsuario = new UserRole { Id = "PAC", Descripcion = "Patient" }
         };
 
         var idUser = await _userService.CreateAndReturnId(user);

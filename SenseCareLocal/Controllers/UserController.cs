@@ -48,18 +48,26 @@ namespace SenseCareLocal.Controllers
         [HttpPost]
         public async Task<ActionResult<JSONResponse>> Create(User user)
         {
-
             try
             {
-                await _userService.Create(user);
-
-                var response = new JSONResponse { Status = 0, Message = "User Succesfully Added", MessageType = MessageType.Success };
-
+                var createdUser = await _userService.Create(user);
+                var response = new JSONResponse
+                {
+                    Status = 0,
+                    Message = "User Successfully Added",
+                    MessageType = MessageType.Success,
+                    Data = new { Id = createdUser.Id } // Incluir el ID en la respuesta
+                };
                 return Ok(response);
             }
             catch (Exception e)
             {
-                var response = new JSONResponse { Status = 1, Message = "Failed Creating User", MessageType = MessageType.Error };
+                var response = new JSONResponse
+                {
+                    Status = 1,
+                    Message = "Failed Creating User",
+                    MessageType = MessageType.Error
+                };
                 return StatusCode(500, response);
             }
         }

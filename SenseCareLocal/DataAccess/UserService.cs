@@ -21,7 +21,7 @@ namespace SenseCareLocal.Services
         public async Task<List<User>> GetAll() =>
             await _users.Find(_ => true).ToListAsync();
 
-        public async Task Create(User user)
+        public async Task<User> Create(User user)
         {
             var last = await _users.Find(_ => true)
                                    .SortByDescending(u => u.Id)
@@ -29,9 +29,9 @@ namespace SenseCareLocal.Services
             user.Id = last != null ? last.Id + 1 : 1;
             user.FecNac = user.FecNac.Date;
             user.Contrasena = PasswordHelper.Hash(user.Contrasena);
-
             await _users.InsertOneAsync(user);
 
+            return user; // Devolver el usuario con el ID asignado
         }
 
         public async Task<User> GetById(int id) =>
@@ -50,7 +50,7 @@ namespace SenseCareLocal.Services
                                    .FirstOrDefaultAsync();
 
             user.Id = last != null ? last.Id + 1 : 1;
-            user.Contrasena = PasswordHelper.Hash(user.Contrasena);
+            user.Contrasena = "";
             user.FecNac = user.FecNac.Date;
             user.Activo = true;
 
