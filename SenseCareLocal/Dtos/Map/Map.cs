@@ -8,6 +8,9 @@ public class Map
     [BsonElement("sexo")]
     public string Sexo { get; set; }
 
+    [BsonElement("foto")]
+    public string foto { get; set; }
+
     [BsonElement("latitud")]
     public double Latitud { get; set; }
 
@@ -15,6 +18,6 @@ public class Map
     public double Longitud { get; set; }
 
     [BsonElement("alerta")]
-    public Alert Alerta { get; set; }
+    public Alert? Alerta { get; set; }
 }
 

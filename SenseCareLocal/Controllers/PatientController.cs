@@ -25,14 +25,16 @@ public class PatientController : ControllerBase
             {
                 Status = 1,
                 Message = "Couldn't register patient",
-                MessageType = MessageType.Error
+                MessageType = MessageType.Error,
+                Data = result
             });
 
         return Ok(new JSONResponse
         {
             Status = 0,
             Message = "Patient created succesfully",
-            MessageType = MessageType.Success
+            MessageType = MessageType.Success,
+            Data = result
         });
     }
 
