@@ -144,9 +144,12 @@ public class PatientService
                     ""cuidador"": {{
                     ""_id"": {{ ""$arrayElemAt"": [""$datosCuidador._id"", 0] }},
                     ""nombre"": {{ ""$arrayElemAt"": [""$datosCuidador.nombre"", 0] }},
-                    ""apellido"": {{ ""$arrayElemAt"": [""$datosCuidador.apellidoPa"", 0] }},
+                    ""apellidoPa"": {{ ""$arrayElemAt"": [""$datosCuidador.apellidoPa"", 0] }},
+                    ""apellidoMa"": {{ ""$arrayElemAt"": [""$datosCuidador.apellidoMa"", 0] }},
                     ""telefono"": {{ ""$arrayElemAt"": [""$datosCuidador.telefono"", 0] }},
-                    ""email"": {{ ""$arrayElemAt"": [""$datosCuidador.email"", 0] }}
+                    ""email"": {{ ""$arrayElemAt"": [""$datosCuidador.email"", 0] }},
+                    ""sexo"": {{ ""$arrayElemAt"": [""$datosCuidador.sexo"", 0] }},
+                    ""fecNac"": {{ ""$arrayElemAt"": [""$datosCuidador.fecNac"", 0] }}
                     }},
                     ""dispositivo"": {{
                     ""$arrayElemAt"": [""$datosDispositivo"", 0]
@@ -213,6 +216,12 @@ public class PatientService
         var result = await _patients.Aggregate(pipeline).ToListAsync();
 
         return result;
+    }
+
+    public async Task<Patient> GetPatientById(int idPaciente)
+    {
+        var filter = Builders<Patient>.Filter.Eq(p => p.Id, idPaciente);
+        return await _patients.Find(filter).FirstOrDefaultAsync();
     }
 
 }

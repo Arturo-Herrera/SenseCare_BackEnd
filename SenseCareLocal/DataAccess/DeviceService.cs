@@ -7,17 +7,19 @@ using MongoDB.Bson;
 public class DeviceService
 {
     private readonly IMongoCollection<Device> _devices;
+    private readonly IMongoCollection<Patient> _patient;
 
     public DeviceService(IOptions<MongoDBSettings> config)
     {
         var client = new MongoClient(config.Value.ConnectionString);
         var database = client.GetDatabase(config.Value.DatabaseName);
         _devices = database.GetCollection<Device>("Dispositivo");
+        _patient = database.GetCollection<Patient>("Paciente");
     }
 
     public async Task CreateDevice(Device device)
     {
-        var last = await _devices.Find(_ => true)
+        var last = await _devices.Find( _=> true)
                                  .SortByDescending(d => d.Id)
                                  .Limit(1)
                                  .FirstOrDefaultAsync();
@@ -69,5 +71,29 @@ public class DeviceService
         return result;
     }
 
-}
+    public async Task<bool> AssignDeviceToPatient(int idPaciente, int idDispositivo)
+    {
+        var patientFilter = Builders<Patient>.Filter.Eq(p => p.IDUsuario, idPaciente);
+        var patient = await _patient.Find(patientFilter).FirstOrDefaultAsync();
 
+        if (patient == null)
+            return false;
+
+        var deviceFilter = Builders<Device>.Filter.Eq(d => d.Id, idDispositivo);
+        var device = await _devices.Find(deviceFilter).FirstOrDefaultAsync();
+
+        if (device == null)
+            return false;
+
+        // Actualizar el paciente con el nuevo dispositivo asignado
+        var update = Builders<Patient>.Update.Set(p => p.IDDispositivo, idDispositivo);
+        await _patient.UpdateOneAsync(patientFilter, update);
+
+        // También puedes actualizar el dispositivo (por ejemplo, marcarlo como asignado)
+        var updateDevice = Builders<Device>.Update.Set(d => d.Activo, true);
+        await _devices.UpdateOneAsync(deviceFilter, updateDevice);
+
+        return true;
+    }
+
+}

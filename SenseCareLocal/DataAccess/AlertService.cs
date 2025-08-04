@@ -79,6 +79,9 @@ namespace SenseCareLocal.Services
                   IDTipoAlerta: 1
                 }}
               }}
+            {{
+            ""$sort"": {{ ""fecha"": -1 }}
+            }}
             ]";
 
             var bsonArray = BsonSerializer.Deserialize<BsonArray>(All); // VAR

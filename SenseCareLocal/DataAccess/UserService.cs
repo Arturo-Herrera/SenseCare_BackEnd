@@ -140,40 +140,6 @@ namespace SenseCareLocal.Services
         }
 
 
-        public async Task<Usuario> DisableUser(int idUser)
-        {
-            var filter = $@"{{ _id: {idUser} }}";
-            var update = $@"{{ $set: {{ activo: false }} }}";
-
-            var filterDoc = BsonSerializer.Deserialize<BsonDocument>(filter);
-            var updateDoc = BsonSerializer.Deserialize<BsonDocument>(update);
-
-            var options = new FindOneAndUpdateOptions<User, Usuario>
-            {
-                ReturnDocument = ReturnDocument.After
-            };
-
-            var result = await _users.FindOneAndUpdateAsync(filterDoc, updateDoc, options);
-            return result;
-        }
-
-        public async Task<Usuario> EnableUser(int idUser)
-        {
-            var filter = $@"{{ _id: {idUser} }}";
-            var update = $@"{{ $set: {{ activo: true }} }}";
-
-            var filterDoc = BsonSerializer.Deserialize<BsonDocument>(filter);
-            var updateDoc = BsonSerializer.Deserialize<BsonDocument>(update);
-
-            var options = new FindOneAndUpdateOptions<User, Usuario>
-            {
-                ReturnDocument = ReturnDocument.After
-            };
-
-            var result = await _users.FindOneAndUpdateAsync(filterDoc, updateDoc, options);
-            return result;
-        }
-
         public async Task<Usuario> UpdateUser(Usuario user)
         {
             var filter = Builders<User>.Filter.Eq(u => u.Id, user.Id);
@@ -227,6 +193,112 @@ namespace SenseCareLocal.Services
             };
         }
 
+        public async Task<User> DisableUser(int idUser)
+        {
+            var filter = Builders<User>.Filter.Eq(u => u.Id, idUser);
+            var update = Builders<User>.Update.Set(u => u.Activo, false);
 
+            var options = new FindOneAndUpdateOptions<User>
+            {
+                ReturnDocument = ReturnDocument.After
+            };
+
+            var result = await _users.FindOneAndUpdateAsync(filter, update, options);
+            return result;
+        }
+
+
+        public async Task<User> EnableUser(int idUser)
+        {
+            var filter = Builders<User>.Filter.Eq(u => u.Id, idUser);
+            var update = Builders<User>.Update.Set(u => u.Activo, true);
+
+            var options = new FindOneAndUpdateOptions<User>
+            {
+                ReturnDocument = ReturnDocument.After
+            };
+
+            var result = await _users.FindOneAndUpdateAsync(filter, update, options);
+            return result;
+        }
+
+
+        public async Task<Usuario> UpdateUser(UpdateUserDTO user)
+        {
+            var filter = Builders<User>.Filter.Eq(u => u.Id, user.Id);
+            var updateDefinitions = new List<UpdateDefinition<User>>();
+
+            // Solo agregar al update si el campo tiene valor
+            if (!string.IsNullOrWhiteSpace(user.Nombre))
+                updateDefinitions.Add(Builders<User>.Update.Set(u => u.Nombre, user.Nombre));
+
+            if (!string.IsNullOrWhiteSpace(user.ApellidoPa))
+                updateDefinitions.Add(Builders<User>.Update.Set(u => u.ApellidoPa, user.ApellidoPa));
+
+            if (user.ApellidoMa != null)
+                updateDefinitions.Add(Builders<User>.Update.Set(u => u.ApellidoMa, user.ApellidoMa));
+
+            if (user.FecNac.HasValue)
+                updateDefinitions.Add(Builders<User>.Update.Set(u => u.FecNac, user.FecNac.Value.Date));
+
+            if (!string.IsNullOrWhiteSpace(user.Sexo))
+                updateDefinitions.Add(Builders<User>.Update.Set(u => u.Sexo, user.Sexo));
+
+            if (!string.IsNullOrWhiteSpace(user.DirColonia))
+                updateDefinitions.Add(Builders<User>.Update.Set(u => u.DirColonia, user.DirColonia));
+
+            if (!string.IsNullOrWhiteSpace(user.DirCalle))
+                updateDefinitions.Add(Builders<User>.Update.Set(u => u.DirCalle, user.DirCalle));
+
+            if (!string.IsNullOrWhiteSpace(user.DirNum))
+                updateDefinitions.Add(Builders<User>.Update.Set(u => u.DirNum, user.DirNum));
+
+            if (!string.IsNullOrWhiteSpace(user.Telefono))
+                updateDefinitions.Add(Builders<User>.Update.Set(u => u.Telefono, user.Telefono));
+
+            if (!string.IsNullOrWhiteSpace(user.Email))
+                updateDefinitions.Add(Builders<User>.Update.Set(u => u.Email, user.Email));
+
+            if (!string.IsNullOrWhiteSpace(user.Contrasena))
+                updateDefinitions.Add(Builders<User>.Update.Set(u => u.Contrasena, PasswordHelper.Hash(user.Contrasena)));
+
+            if (user.Activo.HasValue)
+                updateDefinitions.Add(Builders<User>.Update.Set(u => u.Activo, user.Activo.Value));
+
+            // --- Importante: Los roles NO se actualizan (IDTipoUsuario) ---
+
+            if (!updateDefinitions.Any())
+                throw new Exception("No fields to update.");
+
+            var update = Builders<User>.Update.Combine(updateDefinitions);
+
+            var options = new FindOneAndUpdateOptions<User>
+            {
+                ReturnDocument = ReturnDocument.After
+            };
+
+            var updatedUser = await _users.FindOneAndUpdateAsync(filter, update, options);
+
+            if (updatedUser == null)
+                return null;
+
+            return new Usuario
+            {
+                Id = updatedUser.Id,
+                Nombre = updatedUser.Nombre,
+                ApellidoPa = updatedUser.ApellidoPa,
+                ApellidoMa = updatedUser.ApellidoMa,
+                FecNac = updatedUser.FecNac,
+                Sexo = updatedUser.Sexo,
+                DirColonia = updatedUser.DirColonia,
+                DirCalle = updatedUser.DirCalle,
+                DirNum = updatedUser.DirNum,
+                Telefono = updatedUser.Telefono,
+                Email = updatedUser.Email,
+                Contrasena = updatedUser.Contrasena,
+                Activo = updatedUser.Activo,
+                IDTipoUsuario = updatedUser.IDTipoUsuario
+            };
+        }
     }
 }

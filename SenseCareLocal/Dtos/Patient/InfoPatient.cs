@@ -75,12 +75,21 @@ public class CuidadorInfo
     [BsonElement("nombre")]
     public string Nombre { get; set; }
 
-    [BsonElement("apellido")]
-    public string Apellido { get; set; }
+    [BsonElement("apellidoPa")]
+    public string ApellidoPa { get; set; }
+
+    [BsonElement("apellidoMa")]
+    public string ApellidoMa { get; set; }
 
     [BsonElement("telefono")]
     public string Telefono { get; set; }
 
     [BsonElement("email")]
     public string Email { get; set; }
+
+    [BsonElement("sexo")]
+    public string Sexo { get; set; }
+
+    [BsonElement("fecNac")]
+    public DateTime FecNac { get; set; }
 }

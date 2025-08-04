@@ -13,11 +13,13 @@ namespace SenseCareLocal.Controllers
     {
         private readonly UserService _userService;
         private readonly DeviceService _devices;
+        private readonly PatientService _patientService;
 
-        public UsersController(UserService userService, DeviceService devices)
+        public UsersController(UserService userService, DeviceService devices, PatientService patient)
         {
             _userService = userService;
             _devices = devices;
+            _patientService = patient;
         }
 
         [HttpGet]
@@ -81,35 +83,39 @@ namespace SenseCareLocal.Controllers
             return Ok(users);
         }
 
-        [HttpPut("updateState/{idUser}")]
-        public async Task<ActionResult> UpdateUserState(int idUser, [FromQuery] bool activate)
+        [HttpPut("disable/{idPaciente}")]
+        public async Task<ActionResult> DisablePatientAndCaregiver([FromRoute] int idPaciente, [FromQuery] bool activate)
         {
             try
             {
-                Usuario result;
-                if (activate)
-                {
-                    result = await _userService.EnableUser(idUser);
-                }
-                else
-                {
-                    result = await _userService.DisableUser(idUser);
-                }
+                // 1. Buscar al paciente en la colección Paciente
+                var patient = await _patientService.GetPatientById(idPaciente);
+                if (patient == null)
+                    return NotFound($"No patient found with id: {idPaciente}");
 
-                if (result == null)
-                    return NotFound($"Couldn't find a user with id: {idUser}");
+                // 2. Deshabilitar (o habilitar) al usuario base del paciente
+                var updatedPatientUser = activate
+                    ? await _userService.EnableUser(patient.IDUsuario)
+                    : await _userService.DisableUser(patient.IDUsuario);
+
+                // 3. Deshabilitar (o habilitar) al cuidador
+                var updatedCaregiverUser = activate
+                    ? await _userService.EnableUser(patient.IDCuidador)
+                    : await _userService.DisableUser(patient.IDCuidador);
 
                 return Ok(new
                 {
-                    message = activate ? "User activated successfully" : "User deactivated successfully",
-                    usuario = result
+                    message = activate ? "Patient and caregiver activated successfully" : "Patient and caregiver deactivated successfully",
+                    patient = updatedPatientUser,
+                    caregiver = updatedCaregiverUser
                 });
             }
             catch (Exception ex)
             {
-                return BadRequest($"Error updating user state: {ex.Message}");
+                return BadRequest($"Error disabling patient and caregiver: {ex.Message}");
             }
         }
+
 
         [HttpGet("caregivers")]
         public async Task<ActionResult<List<Usuario>>> GetCaregivers()
@@ -142,20 +148,20 @@ namespace SenseCareLocal.Controllers
         }
 
         [HttpPut("updateUser")]
-        public async Task<ActionResult> UpdateUser([FromBody] Usuario user)
+        public async Task<ActionResult> UpdateUser([FromBody] UpdateUserDTO userDto)
         {
             try
             {
-                if (user == null || user.Id == 0)
+                if (userDto == null || userDto.Id == 0)
                 {
                     return BadRequest("Datos de usuario inválidos.");
                 }
 
-                var updatedUser = await _userService.UpdateUser(user);
+                var updatedUser = await _userService.UpdateUser(userDto);
 
                 if (updatedUser == null)
                 {
-                    return NotFound($"No se encontró un usuario con ID {user.Id}.");
+                    return NotFound($"No se encontró un usuario con ID {userDto.Id}.");
                 }
 
                 return Ok(new
@@ -169,6 +175,8 @@ namespace SenseCareLocal.Controllers
                 return StatusCode(500, $"Error al actualizar el usuario: {ex.Message}");
             }
         }
+
+
 
     }
 }

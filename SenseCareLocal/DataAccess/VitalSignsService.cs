@@ -8,6 +8,7 @@ public class VitalSignsService
 {
     private readonly IMongoCollection<VitalSign> _signs;
     private readonly IMongoCollection<Patient> _patient;
+    private readonly IMongoCollection<Alert> _alerts;
 
     public VitalSignsService(IOptions<MongoDBSettings> cfg)
     {
@@ -15,6 +16,7 @@ public class VitalSignsService
         var db = client.GetDatabase(cfg.Value.DatabaseName);
         _signs = db.GetCollection<VitalSign>("SignosVitales");
         _patient = db.GetCollection<Patient>("Paciente");
+        _alerts = db.GetCollection<Alert>("Alertas");
     }
 
     public async Task<List<VitalSign>> GetByPatient(int idPaciente)
@@ -31,14 +33,11 @@ public class VitalSignsService
         if (patient == null)
             throw new Exception("Patient not found");
 
-        // Filtro para buscar documentos del paciente donde falta temperatura o oxigeno
         var filtro = Builders<VitalSign>.Filter.And(
             Builders<VitalSign>.Filter.Eq(s => s.IDPaciente, patient.Id),
             Builders<VitalSign>.Filter.Or(
                 Builders<VitalSign>.Filter.Eq(s => s.Temperatura, 0),
                 Builders<VitalSign>.Filter.Eq(s => s.Oxigeno, 0)
-            //Builders<VitalSign>.Filter.Eq(s => s.Temperatura, BsonNull.Value),
-            //Builders<VitalSign>.Filter.Eq(s => s.Oxigeno, BsonNull.Value)
             )
         );
 
@@ -71,14 +70,44 @@ public class VitalSignsService
                 Pulso = new List<double> { value },
                 Temperatura = 0,
                 Oxigeno = 0,
-                Fuente = false // o true si aplica
+                Fuente = false
             };
             await _signs.InsertOneAsync(newDoc);
         }
+
+        string tipoAlerta = null;
+
+        if (value >= 120 || value < 60)
+        {
+            tipoAlerta = "SOS";
+        }
+        else if (value > 100 && value < 120)
+        {
+            tipoAlerta = "WARN";
+        }
+
+        if (tipoAlerta != null)
+        {
+            var maxAlertIdDoc = await _alerts
+                .Find(Builders<Alert>.Filter.Empty)
+                .SortByDescending(a => a.Id)
+                .Limit(1)
+                .FirstOrDefaultAsync();
+
+            int nextAlertId = (maxAlertIdDoc?.Id ?? 0) + 1;
+
+            var alert = new Alert
+            {
+                Id = nextAlertId,
+                Fecha = DateTime.Now,
+                SignoAfectado = "Pulse",
+                IDPaciente = patient.Id,
+                IDTipoAlerta = tipoAlerta
+            };
+
+            await _alerts.InsertOneAsync(alert);
+        }
     }
-
-
-
 
     public async Task InsertTemperatureAndOxygen(int idDevice, double? temperature, double? oxygen)
     {
@@ -113,30 +142,94 @@ public class VitalSignsService
             if (!needsNew)
             {
                 await _signs.UpdateOneAsync(s => s.Id == last.Id, updateDef);
-                return;
             }
         }
 
-        // Buscar el max Id para generar uno nuevo único
-        var maxIdDoc = await _signs.Find(FilterDefinition<VitalSign>.Empty)
-                                  .SortByDescending(s => s.Id)
-                                  .Limit(1)
-                                  .FirstOrDefaultAsync();
-
-        int nextId = (maxIdDoc != null) ? maxIdDoc.Id + 1 : 1;
-
-        var newDoc = new VitalSign
+        if (needsNew)
         {
-            Id = nextId,
-            IDPaciente = patient.Id,
-            Fecha = DateTime.Now,
-            Pulso = new List<double>(),
-            Temperatura = temperature,
-            Oxigeno = oxygen
-        };
+            // Buscar el max Id para generar uno nuevo único
+            var maxIdDoc = await _signs.Find(FilterDefinition<VitalSign>.Empty)
+                                      .SortByDescending(s => s.Id)
+                                      .Limit(1)
+                                      .FirstOrDefaultAsync();
 
-        await _signs.InsertOneAsync(newDoc);
+            int nextId = (maxIdDoc != null) ? maxIdDoc.Id + 1 : 1;
+
+            var newDoc = new VitalSign
+            {
+                Id = nextId,
+                IDPaciente = patient.Id,
+                Fecha = DateTime.Now,
+                Pulso = new List<double>(),
+                Temperatura = temperature,
+                Oxigeno = oxygen
+            };
+
+            await _signs.InsertOneAsync(newDoc);
+        }
+
+        // ------------------- ALERTAS --------------------
+        string tipoAlerta = null;
+        string signoAfectado = null;
+
+        // Temperatura
+        if (temperature.HasValue)
+        {
+            if (temperature >= 39.5)
+            {
+                tipoAlerta = "SOS";
+                signoAfectado = "Temperature";
+            }
+            else if (temperature > 38.1 && temperature < 39.5)
+            {
+                tipoAlerta = "WARN";
+                signoAfectado = "Temperature";
+            }
+            else if (temperature < 36.1)
+            {
+                tipoAlerta = "SOS";
+                signoAfectado = "Temperature";
+            }
+        }
+
+        // Oxígeno
+        if (oxygen.HasValue)
+        {
+            if (oxygen < 90)
+            {
+                tipoAlerta = "SOS";
+                signoAfectado = "Oxygen";
+            }
+            else if (oxygen >= 90 && oxygen < 94)
+            {
+                tipoAlerta = "WARN";
+                signoAfectado = "Oxygen";
+            }
+        }
+
+        if (tipoAlerta != null && signoAfectado != null)
+        {
+            var maxAlertIdDoc = await _alerts
+                .Find(Builders<Alert>.Filter.Empty)
+                .SortByDescending(a => a.Id)
+                .Limit(1)
+                .FirstOrDefaultAsync();
+
+            int nextAlertId = (maxAlertIdDoc?.Id ?? 0) + 1;
+
+            var alert = new Alert
+            {
+                Id = nextAlertId,
+                Fecha = DateTime.Now,
+                SignoAfectado = signoAfectado,
+                IDPaciente = patient.Id,
+                IDTipoAlerta = tipoAlerta
+            };
+
+            await _alerts.InsertOneAsync(alert);
+        }
     }
+
 
 
 
