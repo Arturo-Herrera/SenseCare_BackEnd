@@ -38,29 +38,30 @@ namespace SenseCareLocal.Controllers
         [HttpPost]
         public async Task<ActionResult> Create(Report report)
         {
-            try
+            //try
+            //{
+            await _reportService.Create(report);
+            var response = new JSONResponse
             {
-                await _reportService.Create(report);
-                var response = new JSONResponse
-                {
-                    Status = 0,
-                    Message = "Report Succesfully Added",
-                    MessageType = MessageType.Success
-                };
+                Status = 0,
+                Message = "Report Succesfully Added",
+                MessageType = MessageType.Success,
+                Data = report
+            };
 
-                return Ok(response);
-            }
-            catch
-            {
-                var response = new JSONResponse
-                {
-                    Status = 1,
-                    Message = "Failed Creating Report",
-                    MessageType = MessageType.Error
-                };
+            return Ok(response);
+            //}
+            //catch
+            //{
+            //    var response = new JSONResponse
+            //    {
+            //        Status = 1,
+            //        Message = "Failed Creating Report",
+            //        MessageType = MessageType.Error
+            //    };
 
-                return StatusCode(500, response);
-            }
+            //    return StatusCode(500, response);
+            //}
         }
     }
 }

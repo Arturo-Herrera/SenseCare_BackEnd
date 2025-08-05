@@ -55,7 +55,9 @@ public class AuthController : ControllerBase
             {
                 Id = user.Id,
                 Email = user.Email,
-                Rol = user.IDTipoUsuario.Id
+                Rol = user.IDTipoUsuario.Id,
+                Nombre = user.Nombre + " " + user.ApellidoPa + " " + user.ApellidoMa
+
             }
         });
     }

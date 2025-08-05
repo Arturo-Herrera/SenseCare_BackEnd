@@ -308,46 +308,68 @@ public class VitalSignsService
     }
 
 
-    public async Task<AverageOxygenLevel> GetOxygenLevelAvg(int idMedic)
+    public async Task<AvgManual> GetAvgManualSigns(int idMedic)
     {
-        var avgOxygen = $@"
+        var avgManuals = $@"
     [
         {{
-            ""$lookup"": {{
-                ""from"": ""Paciente"",
-                ""localField"": ""IDPaciente"",
-                ""foreignField"": ""_id"",
-                ""as"": ""paciente""
+            ""$match"": {{
+                ""IDMedico"": {idMedic}
             }}
         }},
         {{
-            ""$unwind"": ""$paciente""
+            ""$lookup"": {{
+                ""from"": ""SignosVitales"",
+                ""localField"": ""_id"",
+                ""foreignField"": ""IDPaciente"",
+                ""as"": ""signosVitales""
+            }}
+        }},
+        {{
+            ""$unwind"": ""$signosVitales""
         }},
         {{
             ""$match"": {{
-                ""paciente.IDMedico"": {idMedic}
+                ""signosVitales.fuente"": true
+            }}
+        }},
+        {{
+            ""$group"": {{
+                ""_id"": {{
+                    ""fecha"": {{
+                        ""$dateToString"": {{
+                            ""format"": ""%Y-%m-%d"",
+                            ""date"": ""$signosVitales.fecha""
+                        }}
+                    }}
+                }},
+                ""totalSignosDia"": {{ ""$sum"": 1 }}
             }}
         }},
         {{
             ""$group"": {{
                 ""_id"": null,
-                ""promedioOxigeno"": {{ ""$avg"": ""$oxigeno"" }}
+                ""totalLecturas"": {{ ""$sum"": ""$totalSignosDia"" }},
+                ""totalDias"": {{ ""$sum"": 1 }}
             }}
         }},
         {{
             ""$project"": {{
                 ""_id"": 0,
-                ""promedioOxigeno"": {{ ""$round"": [""$promedioOxigeno"", 2] }}
+                ""promedioSignosPorDia"": {{
+                    ""$divide"": [""$totalLecturas"", ""$totalDias""]
+                }}
             }}
         }}
-    ]";
+    ]
+    ";
 
-        var bsonArray = BsonSerializer.Deserialize<BsonArray>(avgOxygen);
+        var bsonArray = BsonSerializer.Deserialize<BsonArray>(avgManuals);
         var bsonDocuments = bsonArray.Select(stage => stage.AsBsonDocument).ToList();
 
-        var pipeline = PipelineDefinition<VitalSign, AverageOxygenLevel>.Create(bsonDocuments);
+        var pipeline = PipelineDefinition<Patient, AvgManual>.Create(bsonDocuments);
 
-        var result = await _signs.Aggregate(pipeline).FirstOrDefaultAsync();
+        var result = await _patient.Aggregate(pipeline).FirstOrDefaultAsync();
 
         return result;
     }

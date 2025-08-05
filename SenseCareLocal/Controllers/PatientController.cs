@@ -110,14 +110,14 @@ public class PatientController : ControllerBase
             var vitalSigns = await _vitalSignService.GetAverageVitalsPerDay(idMedic);
             var activePatients = await _patientService.GetActivePatients(idMedic);
             var alerts = await _alertsService.GetTotalsToday(idMedic);
-            var oxygen = await _vitalSignService.GetOxygenLevelAvg(idMedic);
+            var manualSigns = await _vitalSignService.GetAvgManualSigns(idMedic);
 
             var result = new
             {
                 averageVitals = vitalSigns,
                 alertsPerDay = alerts,
                 activePatients = activePatients,
-                oxygenLevel = oxygen
+                manualSignsPerDay = manualSigns
             };
 
             return Ok(new JSONResponse
