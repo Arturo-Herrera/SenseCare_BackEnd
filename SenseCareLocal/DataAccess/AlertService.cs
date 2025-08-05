@@ -245,8 +245,8 @@ namespace SenseCareLocal.Services
             var today = DateTime.UtcNow.Date;
             var tomorrow = today.AddDays(1);
 
-            var isoToday = today.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
-            var isoTomorrow = tomorrow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
+            var isoToday = today.ToString("yyyy-MM-dd'T'00:00:00.000'Z'");
+            var isoTomorrow = tomorrow.ToString("yyyy-MM-dd'T'00:00:00.000'Z'");
 
             var AlertsPerHour = $@"
             [
