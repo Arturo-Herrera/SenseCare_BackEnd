@@ -107,14 +107,14 @@ public class PatientController : ControllerBase
         try
         {
 
-            var vitalSigns = await _vitalSignService.GetAverageVitalsPerDay(idMedic);
+            var hourlyAlerts = await _alertsService.HourlyAlertsByMedic(idMedic);
             var activePatients = await _patientService.GetActivePatients(idMedic);
             var alerts = await _alertsService.GetTotalsToday(idMedic);
             var manualSigns = await _vitalSignService.GetAvgManualSigns(idMedic);
 
             var result = new
             {
-                averageVitals = vitalSigns,
+                AlertsPerHour = hourlyAlerts,
                 alertsPerDay = alerts,
                 activePatients = activePatients,
                 manualSignsPerDay = manualSigns

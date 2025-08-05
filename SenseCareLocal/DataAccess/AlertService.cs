@@ -240,6 +240,68 @@ namespace SenseCareLocal.Services
             return result;
         }
 
+        public async Task<List<HourlyAlerts>> HourlyAlertsByMedic( int idMedic)
+        {
+            var today = DateTime.UtcNow.Date;
+            var tomorrow = today.AddDays(1);
+
+            var isoToday = today.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
+            var isoTomorrow = tomorrow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
+
+            var AlertsPerHour = $@"
+            [
+              {{
+                $lookup: {{
+                  from: ""Paciente"",
+                  localField: ""IDPaciente"",
+                  foreignField: ""_id"",
+                  as: ""paciente""
+                }}
+              }},
+              {{ $unwind: ""$paciente"" }},
+              {{
+                $match: {{
+                  ""paciente.IDMedico"": {idMedic},
+                  fecha: {{
+                    $gte: ISODate(""{isoToday}""),
+                    $lt: ISODate(""{isoTomorrow}"")
+                  }}
+                }}
+              }},
+              {{
+                $group: {{
+                  _id: {{
+                    $dateToString: {{
+                      format: ""%H:00"",
+                      date: ""$fecha"",
+                      timezone: ""-07:00""
+                    }}
+                  }},
+                  totalAlertas: {{ $sum: 1 }}
+                }}
+              }},
+              {{
+                $project: {{
+                  _id: 0,
+                  hora: ""$_id"",
+                  totalAlertas: 1
+                }}
+              }},
+              {{
+                $sort: {{ hora: 1 }}
+              }}
+            ]
+            ";
+
+            var bsonArray = BsonSerializer.Deserialize<BsonArray>(AlertsPerHour);
+            var bsonDocuments = bsonArray.Select(stage => stage.AsBsonDocument).ToList();
+
+            var pipeline = PipelineDefinition<Alert, HourlyAlerts>.Create(bsonDocuments);
+            var result = await _alerts.Aggregate(pipeline).ToListAsync();
+
+            return result;
+        }
+
     }
 
 }

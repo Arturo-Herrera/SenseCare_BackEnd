@@ -38,7 +38,6 @@ public class AlertsController : ControllerBase
         return Ok(alerts);
     }
 
-
     [HttpPost]
     public async Task<ActionResult<JSONResponse>> Create(Alert alert)
     {
@@ -53,5 +52,5 @@ public class AlertsController : ControllerBase
             return BadRequest(new JSONResponse { Status = 1, Message = e.Message, MessageType = MessageType.Error });
         }
     }
-
+   
 }
