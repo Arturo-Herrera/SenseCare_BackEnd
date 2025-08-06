@@ -93,7 +93,7 @@ namespace SenseCareLocal.DataAccess
           if: {{ $ne: [""$ultimaAlerta.fecha"", null] }},
           then: {{
             $dateToString: {{
-              format: ""%Y-%m-%d"",
+              format: ""%Y-%m-%dT%H:%M:%SZ"",
               date: ""$ultimaAlerta.fecha""
             }}
           }},
