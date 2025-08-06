@@ -363,5 +363,3 @@ MigrationBackup/
 FodyWeavers.xsd
 /SenseCareLocal/appsettings.json
 /SenseCareLocal/Properties/launchSettings.json
-/SenseCareLocal/Config/sensecare-320d3a01dd93.json
-/SenseCareLocal/Config/key_google.json
