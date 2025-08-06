@@ -8,12 +8,6 @@ public class Device
     [BsonElement("fecha")]
     public DateTime Fecha { get; set; }
 
-    [BsonElement("latitud")]
-    public double Latitud { get; set; }
-
-    [BsonElement("longitud")]
-    public double Longitud { get; set; }
-
     [BsonElement("activo")]
     public bool Activo { get; set; }
 }
