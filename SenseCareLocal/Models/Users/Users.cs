@@ -16,9 +16,6 @@ public class User
     [BsonElement("apellidoMa")]
     public string ApellidoMa { get; set; }
 
-    [BsonElement("foto")]
-    public string? Foto { get; set; }
-
     [BsonElement("fecNac")]
     [JsonConverter(typeof(DateOnlyJsonConverter))]
     public DateTime FecNac { get; set; }
@@ -39,10 +36,10 @@ public class User
     public string Telefono { get; set; }
 
     [BsonElement("email")]
-    public string? Email { get; set; }
+    public string Email { get; set; }
 
     [BsonElement("contrasena")]
-    public string? Contrasena { get; set; }
+    public string Contrasena { get; set; }
 
     [BsonElement("activo")]
     public bool Activo { get; set; }

@@ -1,4 +1,4 @@
-﻿namespace SenseCareLocal.Dtos.Login;
+﻿namespace SenseCareLocal.DTOs;
 
 public class LoginDto
 {
