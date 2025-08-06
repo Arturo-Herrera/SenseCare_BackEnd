@@ -8,17 +8,26 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 public class TriggerDeviceController : ControllerBase
 {
     private readonly TriggerDevice _trigger;
+    private readonly PatientService _patients;
 
-    public TriggerDeviceController(TriggerDevice triggerStore)
+    public TriggerDeviceController(TriggerDevice triggerStore , PatientService patients)
     {
         _trigger = triggerStore;
+        _patients = patients;
     }
 
     [HttpPost("trigger")]
-    public IActionResult TriggerRead([FromBody] int id)
+    public async Task<IActionResult> TriggerRead([FromBody] int idCuidador)
     {
-        _trigger.SetTrigger(id);
-        return Ok();
+        var deviceId = await _patients.GetDeviceIdByCuidadorAsync(idCuidador);
+
+        if (deviceId == null)
+        {
+            return NotFound(new { message = "No se encontró un paciente asignado a este cuidador." });
+        }
+
+        _trigger.SetTrigger(deviceId.Value);
+        return Ok(new { message = $"Trigger enviado al dispositivo {deviceId.Value}" });
     }
 
     [HttpGet("trigger/{id}")]

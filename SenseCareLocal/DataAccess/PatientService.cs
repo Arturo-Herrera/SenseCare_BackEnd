@@ -224,4 +224,12 @@ public class PatientService
         return await _patients.Find(filter).FirstOrDefaultAsync();
     }
 
+    public async Task<int?> GetDeviceIdByCuidadorAsync(int idCuidador)
+    {
+        var filter = Builders<Patient>.Filter.Eq(p => p.IDCuidador, idCuidador);
+        var paciente = await _patients.Find(filter).FirstOrDefaultAsync();
+
+        return paciente?.IDDispositivo;
+    }
+
 }

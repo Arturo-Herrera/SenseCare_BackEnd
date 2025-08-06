@@ -19,12 +19,50 @@ public class VitalSignsService
         _alerts = db.GetCollection<Alert>("Alertas");
     }
 
-    public async Task<List<VitalSign>> GetByPatient(int idPaciente)
+    public async Task<VitalSign?> GetByPatient(int idPaciente)
     {
-        return await _signs.Find(s => s.IDPaciente == idPaciente)
-                            .SortByDescending(s => s.Fecha)
-                            .Limit(1)
-                            .ToListAsync();
+        var latestSign = await _signs.Find(s => s.IDPaciente == idPaciente)
+                                     .SortByDescending(s => s.Fecha)
+                                     .FirstOrDefaultAsync();
+
+        if (latestSign == null)
+            return null;
+             
+        double? latestTemp = latestSign.Temperatura;
+        double? latestOxygen = latestSign.Oxigeno;
+
+        if (latestTemp == null || latestTemp == 0)
+        {
+            var tempDoc = await _signs.Find(s => s.IDPaciente == idPaciente && s.Temperatura != null && s.Temperatura != 0)
+                                      .SortByDescending(s => s.Fecha)
+                                      .FirstOrDefaultAsync();
+
+            if (tempDoc != null)
+                latestTemp = tempDoc.Temperatura;
+        }
+
+        if (latestOxygen == null || latestOxygen == 0)
+        {
+            var oxygenDoc = await _signs.Find(s => s.IDPaciente == idPaciente && s.Oxigeno != null && s.Oxigeno != 0)
+                                        .SortByDescending(s => s.Fecha)
+                                        .FirstOrDefaultAsync();
+
+            if (oxygenDoc != null)
+                latestOxygen = oxygenDoc.Oxigeno;
+        }
+
+        var mergedSign = new VitalSign
+        {
+            Id = latestSign.Id,
+            Fecha = latestSign.Fecha,
+            IDPaciente = latestSign.IDPaciente,
+            Fuente = latestSign.Fuente,
+            Pulso = latestSign.Pulso,
+            Temperatura = latestTemp ?? 0,
+            Oxigeno = latestOxygen ?? 0
+        };
+
+        return mergedSign;
     }
 
     public async Task InsertPulse(int idDevice, double value)
