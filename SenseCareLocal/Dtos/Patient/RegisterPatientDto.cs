@@ -12,6 +12,9 @@ public class RegisterPatientDto
     [BsonElement("apellidoMa")]
     public string ApellidoMa { get; set; }
 
+    [BsonElement("foto")]
+    public string Foto { get; set; }
+
     [BsonElement("fecNac")]
     public DateTime FecNac { get; set; }
 
@@ -29,12 +32,6 @@ public class RegisterPatientDto
 
     [BsonElement("telefono")]
     public string Telefono { get; set; }
-
-    [BsonElement("email")]
-    public string Email { get; set; }
-
-    [BsonElement("contrasena")]
-    public string Contrasena { get; set; }
 
     // Referencias
     [BsonElement("IDCuidador")]

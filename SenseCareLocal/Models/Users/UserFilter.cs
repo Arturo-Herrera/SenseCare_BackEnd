@@ -1,7 +1,14 @@
-﻿using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
-using System.Text.Json.Serialization;
-public class User
+﻿using MongoDB.Bson.Serialization.Attributes;
+
+public class UserFilter
+{
+    public bool? Active { get; set; }
+
+    public string? Role { get; set; }
+
+}
+
+public class UserFilterData
 {
     [BsonId]
     public int Id { get; set; }
@@ -16,11 +23,7 @@ public class User
     [BsonElement("apellidoMa")]
     public string ApellidoMa { get; set; }
 
-    [BsonElement("foto")]
-    public string? Foto { get; set; }
-
     [BsonElement("fecNac")]
-    [JsonConverter(typeof(DateOnlyJsonConverter))]
     public DateTime FecNac { get; set; }
 
     [BsonElement("sexo")]
@@ -39,14 +42,18 @@ public class User
     public string Telefono { get; set; }
 
     [BsonElement("email")]
-    public string? Email { get; set; }
+    public string Email { get; set; }
 
     [BsonElement("contrasena")]
-    public string? Contrasena { get; set; }
+    public string Contrasena { get; set; }
 
     [BsonElement("activo")]
     public bool Activo { get; set; }
 
     [BsonElement("IDTipoUsuario")]
-    public UserRole IDTipoUsuario { get; set; }
+    public string IDUserType { get; set; }
+
+    [BsonElement("DescripcionTipoUsuario")]
+    public string DescriptionUserType { get; set; }
 }
+

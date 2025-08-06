@@ -1,9 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SenseCareLocal.DTOs;
 using SenseCareLocal.Services;
-using SenseCareLocal.DTOs;
 using SenseCareLocal.Services;
 using SenseCareAPI.Helpers;
+using SenseCareLocal.Dtos.Login;
 
 
 namespace SenseCareLocal.Controllers;
@@ -56,7 +55,9 @@ public class AuthController : ControllerBase
             {
                 Id = user.Id,
                 Email = user.Email,
-                Rol = user.IDTipoUsuario.Id
+                Rol = user.IDTipoUsuario.Id,
+                Nombre = user.Nombre + " " + user.ApellidoPa + " " + user.ApellidoMa
+
             }
         });
     }

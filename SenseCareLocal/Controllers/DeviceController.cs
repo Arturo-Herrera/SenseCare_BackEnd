@@ -37,10 +37,28 @@ public class DeviceController : ControllerBase
 
 
             return Ok(device);
-        } catch(Exception e) 
+        }
+        catch (Exception e)
         {
             return NotFound();
         }
     }
-}
 
+    [HttpPut("assignDeviceToPatient")]
+    public async Task<IActionResult> AssignDeviceToPatient([FromBody] DeviceAssignmentDTO assignment)
+    {
+        try
+        {
+            var success = await _deviceService.AssignDeviceToPatient(assignment.IdPaciente, assignment.IdDispositivo);
+
+            if (!success)
+                return NotFound("Paciente o Dispositivo no encontrado.");
+
+            return Ok(new { message = "Dispositivo asignado correctamente al paciente." });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Error interno: {ex.Message}");
+        }
+    }
+}

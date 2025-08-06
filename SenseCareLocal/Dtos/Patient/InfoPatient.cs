@@ -1,7 +1,22 @@
-﻿using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
+﻿using MongoDB.Bson.Serialization.Attributes;
 using System.Text.Json.Serialization;
-public class User
+
+public class InfoPatientResult
+{
+    [BsonId]
+    public int Id { get; set; }
+
+    [BsonElement("paciente")]
+    public Usuario Paciente { get; set; }
+
+    [BsonElement("cuidador")]
+    public CuidadorInfo Cuidador { get; set; }
+
+    [BsonElement("dispositivo")]
+    public DevicePatient Dispositivo { get; set; }
+}
+
+public class Usuario
 {
     [BsonId]
     public int Id { get; set; }
@@ -39,14 +54,42 @@ public class User
     public string Telefono { get; set; }
 
     [BsonElement("email")]
-    public string? Email { get; set; }
+    public string Email { get; set; }
 
     [BsonElement("contrasena")]
-    public string? Contrasena { get; set; }
+    public string Contrasena { get; set; }
 
     [BsonElement("activo")]
     public bool Activo { get; set; }
 
     [BsonElement("IDTipoUsuario")]
     public UserRole IDTipoUsuario { get; set; }
+
+}
+
+public class CuidadorInfo
+{
+    [BsonElement("_id")]
+    public int Id { get; set; }
+
+    [BsonElement("nombre")]
+    public string Nombre { get; set; }
+
+    [BsonElement("apellidoPa")]
+    public string ApellidoPa { get; set; }
+
+    [BsonElement("apellidoMa")]
+    public string ApellidoMa { get; set; }
+
+    [BsonElement("telefono")]
+    public string Telefono { get; set; }
+
+    [BsonElement("email")]
+    public string Email { get; set; }
+
+    [BsonElement("sexo")]
+    public string Sexo { get; set; }
+
+    [BsonElement("fecNac")]
+    public DateTime FecNac { get; set; }
 }
